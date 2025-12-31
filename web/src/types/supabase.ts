@@ -82,7 +82,7 @@ export interface Database {
                     room_id: string
                     sender_device_id: string | null
                     sender_name_snapshot: string
-                    kind: 'text' | 'image'
+                    kind: 'text' | 'image' | 'file'
                     body: string | null
                     attachment_id: string | null
                     created_at: string
@@ -92,7 +92,7 @@ export interface Database {
                     room_id: string
                     sender_device_id?: string | null
                     sender_name_snapshot: string
-                    kind: 'text' | 'image'
+                    kind: 'text' | 'image' | 'file'
                     body?: string | null
                     attachment_id?: string | null
                     created_at?: string
@@ -102,7 +102,7 @@ export interface Database {
                     room_id?: string
                     sender_device_id?: string | null
                     sender_name_snapshot?: string
-                    kind?: 'text' | 'image'
+                    kind?: 'text' | 'image' | 'file'
                     body?: string | null
                     attachment_id?: string | null
                     created_at?: string
@@ -121,30 +121,33 @@ export interface Database {
                     id: string
                     room_id: string
                     uploader_device_id: string | null
-                    kind: 'image'
+                    kind: 'image' | 'file'
                     storage_path: string
                     mime: string
                     size_bytes: number
+                    filename: string | null
                     created_at: string
                 }
                 Insert: {
                     id?: string
                     room_id: string
                     uploader_device_id?: string | null
-                    kind: 'image'
+                    kind: 'image' | 'file'
                     storage_path: string
                     mime: string
                     size_bytes: number
+                    filename?: string | null
                     created_at?: string
                 }
                 Update: {
                     id?: string
                     room_id?: string
                     uploader_device_id?: string | null
-                    kind?: 'image'
+                    kind?: 'image' | 'file'
                     storage_path?: string
                     mime?: string
                     size_bytes?: number
+                    filename?: string | null
                     created_at?: string
                 }
                 Relationships: [

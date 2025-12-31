@@ -14,6 +14,7 @@ interface AppState {
 
     setDisplayName: (name: string) => void
     addToHistory: (room: RoomHistoryItem) => void
+    removeFromHistory: (roomId: string) => void
     clearHistory: () => void
 
     // Active Room State (not persisted)
@@ -37,6 +38,11 @@ export const useAppStore = create<AppState>()(
                 const filtered = roomHistory.filter(r => r.id !== room.id)
                 const newHistory = [room, ...filtered].slice(0, 20)
                 set({ roomHistory: newHistory })
+            },
+
+            removeFromHistory: (roomId) => {
+                const { roomHistory } = get()
+                set({ roomHistory: roomHistory.filter(r => r.id !== roomId) })
             },
 
             clearHistory: () => set({ roomHistory: [] }),

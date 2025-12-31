@@ -10,6 +10,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
+// Set custom JWT token for authenticated requests (for RLS policies)
+export function setAuthToken(token: string | null) {
+    if (token) {
+        // Create a new client with the custom token in global headers
+        // This is a workaround since we're using custom JWTs not Supabase Auth
+        (supabase as any).rest.headers['Authorization'] = `Bearer ${token}`;
+        (supabase as any).realtime.accessToken = token;
+    }
+}
+
 // API Helper to call Edge Functions with proper headers or token
 // Using direct fetch instead of supabase.functions.invoke to fix JSON serialization issue
 export async function invokeFunction(name: string, body: any, token?: string) {
@@ -35,3 +45,4 @@ export async function invokeFunction(name: string, body: any, token?: string) {
 
     return response.json()
 }
+

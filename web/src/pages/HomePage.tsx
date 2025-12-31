@@ -1,99 +1,137 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Settings, Plus, QrCode, Hash, Users, Clock } from 'lucide-react'
+import { Plus, QrCode, MessageCircle, Settings } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { useState } from 'react'
-import { invokeFunction } from '../lib/supabase'
+import { invokeFunction, setAuthToken } from '../lib/supabase'
 
 export function HomePage() {
     const roomHistory = useAppStore(state => state.roomHistory)
     const deviceId = useAppStore(state => state.deviceId)
     const displayName = useAppStore(state => state.displayName)
     const addToHistory = useAppStore(state => state.addToHistory)
+    const setActiveRoomToken = useAppStore(state => state.setActiveRoomToken)
     const navigate = useNavigate()
 
     const [isCreating, setIsCreating] = useState(false)
 
     const handleCreateRoom = async () => {
-        const name = prompt("Enter Room Name (Optional)")
+        const name = prompt("トークルーム名を入力（任意）")
         if (name === null) return
 
         setIsCreating(true)
         try {
-            const { room } = await invokeFunction('create_room', {
+            const { room, token } = await invokeFunction('create_room', {
                 device_id: deviceId,
                 display_name: displayName,
-                room_name: name || 'Untitled Protocol'
+                room_name: name || '新しいトークルーム'
             })
 
-            if (room) {
+            if (room && token) {
+                // Set auth token for RLS
+                setAuthToken(token)
+                setActiveRoomToken(token)
+
                 addToHistory({
                     id: room.id,
-                    name: room.name || 'Untitled Protocol',
+                    name: room.name || '新しいトークルーム',
                     joinedAt: new Date().toISOString()
                 })
                 navigate(`/room/${room.id}`)
             }
         } catch (e: any) {
             console.error(e)
-            alert("Error creating room: " + (e.message || "Unknown error"))
+            alert("ルーム作成エラー: " + (e.message || "Unknown error"))
         } finally {
             setIsCreating(false)
         }
     }
 
-    return (
-        <div className="flex flex-col h-screen bg-deep text-white relative overflow-hidden">
-            {/* Background Gradients */}
-            <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr)
+        const now = new Date()
+        const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
+        if (diffDays === 0) {
+            return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+        } else if (diffDays === 1) {
+            return '昨日'
+        } else if (diffDays < 7) {
+            return ['日', '月', '火', '水', '木', '金', '土'][date.getDay()] + '曜日'
+        } else {
+            return `${date.getMonth() + 1}/${date.getDate()}`
+        }
+    }
+
+    const getInitial = (name: string) => {
+        return name?.charAt(0)?.toUpperCase() || '?'
+    }
+
+    return (
+        <div className="flex flex-col h-screen bg-white">
             {/* Header */}
-            <header className="px-6 py-6 flex items-center justify-between z-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-surface border border-white/10 flex items-center justify-center">
-                        <Hash className="text-blue-500" size={20} />
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-lg leading-tight">Channels</h1>
-                        <p className="text-xs text-neutral-500 font-mono">Active Uplinks: {roomHistory.length}</p>
-                    </div>
+            <header className="bg-line-green text-white px-4 py-4 flex items-center justify-between shadow-sm">
+                <h1 className="font-bold text-xl">トーク</h1>
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={handleCreateRoom}
+                        disabled={isCreating}
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+                    >
+                        {isCreating ? (
+                            <span className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full block" />
+                        ) : (
+                            <Plus size={22} />
+                        )}
+                    </button>
+                    <Link to="/settings" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <Settings size={22} />
+                    </Link>
                 </div>
-                <Link to="/settings" className="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors">
-                    <Settings size={20} className="text-neutral-400" />
-                </Link>
             </header>
 
-            {/* Content */}
-            <main className="flex-1 overflow-y-auto px-6 py-4 space-y-4 z-10 pb-24">
+            {/* Search placeholder (optional style) */}
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="bg-white border border-gray-200 rounded-full px-4 py-2 text-gray-400 text-sm">
+                    🔍 検索
+                </div>
+            </div>
+
+            {/* Chat List */}
+            <main className="flex-1 overflow-y-auto">
                 {roomHistory.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-6 animate-enter">
-                        <div className="w-20 h-20 rounded-full bg-surface border border-dashed border-neutral-700 flex items-center justify-center">
-                            <Users className="text-neutral-600" size={32} />
+                    <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
+                        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
+                            <MessageCircle className="text-gray-300" size={40} />
                         </div>
-                        <div className="space-y-2">
-                            <p className="text-neutral-300 font-medium">No Active Signals</p>
-                            <p className="text-neutral-500 text-sm max-w-[200px] mx-auto">Create a secure room or scan a code to join the network.</p>
+                        <div className="space-y-1">
+                            <p className="text-gray-600 font-medium">トークがありません</p>
+                            <p className="text-gray-400 text-sm">新しいトークルームを作成してみましょう</p>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid gap-3">
-                        {roomHistory.map((room, i) => (
+                    <div>
+                        {roomHistory.map((room) => (
                             <Link
                                 key={room.id}
                                 to={`/room/${room.id}`}
-                                className="group block bg-surface/50 border border-white/5 p-5 rounded-2xl hover:bg-surface hover:border-blue-500/30 transition-all duration-300 animate-enter"
-                                style={{ animationDelay: `${i * 50}ms` }}
+                                className="room-item"
                             >
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="font-bold text-lg text-neutral-200 group-hover:text-blue-400 transition-colors">
-                                        {room.name}
-                                    </div>
-                                    <span className="text-[10px] font-mono bg-white/5 py-1 px-2 rounded text-neutral-500 group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
-                                        {room.id.slice(0, 4)}...
-                                    </span>
+                                {/* Avatar */}
+                                <div className="avatar text-lg">
+                                    {getInitial(room.name)}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-neutral-600 font-mono">
-                                    <Clock size={12} />
-                                    <span>Joined {new Date(room.joinedAt).toLocaleDateString()}</span>
+
+                                {/* Room info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-gray-900 truncate">{room.name}</span>
+                                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                                            {formatDate(room.joinedAt)}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-500 truncate mt-0.5">
+                                        タップしてトークを開く
+                                    </p>
                                 </div>
                             </Link>
                         ))}
@@ -101,28 +139,16 @@ export function HomePage() {
                 )}
             </main>
 
-            {/* Floating Action Bar */}
-            <div className="absolute bottom-6 left-6 right-6 z-20">
-                <div className="glass-panel p-2 rounded-2xl flex items-center justify-between shadow-2xl shadow-black/50">
-                    <Link to="/join" className="flex-1 py-4 flex flex-col items-center justify-center gap-1 text-neutral-400 hover:text-white transition-colors hover:bg-white/5 rounded-xl">
-                        <QrCode size={24} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Scan</span>
-                    </Link>
-                    <div className="w-[1px] h-8 bg-white/10 mx-2" />
-                    <button
-                        onClick={handleCreateRoom}
-                        disabled={isCreating}
-                        className="flex-1 py-4 flex flex-col items-center justify-center gap-1 text-blue-400 hover:text-blue-300 transition-colors hover:bg-blue-500/10 rounded-xl"
-                    >
-                        {isCreating ? (
-                            <span className="animate-spin w-6 h-6 border-2 border-white/20 border-t-blue-500 rounded-full" />
-                        ) : (
-                            <Plus size={24} />
-                        )}
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Create</span>
-                    </button>
-                </div>
-            </div>
+            <nav className="flex items-center justify-around py-2 bg-white border-t border-gray-200">
+                <Link to="/home" className="flex flex-col items-center gap-1 text-line-green py-2 px-4">
+                    <MessageCircle size={24} />
+                    <span className="text-[10px] font-medium">トーク</span>
+                </Link>
+                <Link to="/join" className="flex flex-col items-center gap-1 text-gray-400 py-2 px-4 hover:text-line-green transition-colors">
+                    <QrCode size={24} />
+                    <span className="text-[10px] font-medium">QRスキャン</span>
+                </Link>
+            </nav>
         </div>
     )
 }
