@@ -75,7 +75,7 @@ serve(async (req) => {
     if (!jwtSecret) throw new Error('Missing JWT Secret')
 
     const { create, getNumericDate } = await import("https://deno.land/x/djwt@v2.9.1/mod.ts")
-    const key = await crypto.subtle.importKey(
+    const cryptoKey = await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(jwtSecret),
       { name: "HMAC", hash: "SHA-256" },
@@ -91,7 +91,7 @@ serve(async (req) => {
         aud: "authenticated",
         exp: getNumericDate(60 * 60 * 24 * 30) // 30 days
       },
-      key
+      cryptoKey
     )
 
     return new Response(
