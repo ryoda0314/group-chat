@@ -2,11 +2,12 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAppStore } from '../stores/useAppStore'
-import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp } from 'lucide-react'
+import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { MathText } from '../components/MathText'
 import { Whiteboard } from '../components/Whiteboard'
 import { GraphMaker } from '../components/GraphMaker'
+import { TodoList } from '../components/TodoList'
 
 export function RoomPage() {
     const { id } = useParams()
@@ -26,6 +27,7 @@ export function RoomPage() {
     const [showAttachMenu, setShowAttachMenu] = useState(false)
     const [showWhiteboard, setShowWhiteboard] = useState(false)
     const [showGraphMaker, setShowGraphMaker] = useState(false)
+    const [showTodoList, setShowTodoList] = useState(false)
 
     const removeFromHistory = useAppStore(state => state.removeFromHistory)
 
@@ -213,6 +215,7 @@ export function RoomPage() {
                     >
                         <QrCode size={20} />
                     </button>
+
                     <button
                         onClick={() => setShowSettings(true)}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -383,6 +386,18 @@ export function RoomPage() {
                                 <p className="text-center text-gray-400 py-4">メンバーがいません</p>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TODO List Modal */}
+            {showTodoList && id && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setShowTodoList(false)}>
+                    <div
+                        className="w-full max-w-sm h-full bg-white shadow-xl animate-enter"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <TodoList roomId={id} onClose={() => setShowTodoList(false)} />
                     </div>
                 </div>
             )}
@@ -588,6 +603,18 @@ export function RoomPage() {
                                 <TrendingUp size={20} className="text-indigo-600" />
                             </div>
                             <span className="font-medium">グラフ作成</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowTodoList(true)
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+                                <ListTodo size={20} className="text-teal-600" />
+                            </div>
+                            <span className="font-medium">タスクリスト</span>
                         </button>
                     </div>
                 )}

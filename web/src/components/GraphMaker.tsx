@@ -75,8 +75,12 @@ export function GraphMaker({ onSend, onClose }: GraphMakerProps) {
         try {
             previewRef.current.innerHTML = ''
 
+            // Check if input is empty
+            if (!fn || !fn.trim()) return
+
             // Convert potential LaTeX to math string
             const mathFn = latexToMath(fn)
+            if (!mathFn) return
 
             const xDomain = [parseFloat(xMin) || -10, parseFloat(xMax) || 10]
             const yDomain = useYRange

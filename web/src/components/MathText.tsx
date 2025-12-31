@@ -99,6 +99,10 @@ function Graph({ fn, xMin = -10, xMax = 10, yMin, yMax, showGrid = true, showAxi
 
     useEffect(() => {
         if (!containerRef.current) return
+        if (!fn || !fn.trim()) {
+            containerRef.current.innerHTML = ''
+            return
+        }
 
         try {
             // Clear previous graph

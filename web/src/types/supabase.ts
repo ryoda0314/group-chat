@@ -158,6 +158,40 @@ export interface Database {
                         referencedColumns: ["id"]
                     }
                 ]
+            },
+            room_todos: {
+                Row: {
+                    id: string
+                    room_id: string
+                    text: string
+                    completed: boolean
+                    created_at: string
+                    created_by_device_id: string | null
+                }
+                Insert: {
+                    id?: string
+                    room_id: string
+                    text: string
+                    completed?: boolean
+                    created_at?: string
+                    created_by_device_id?: string | null
+                }
+                Update: {
+                    id?: string
+                    room_id?: string
+                    text?: string
+                    completed?: boolean
+                    created_at?: string
+                    created_by_device_id?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "room_todos_room_id_fkey"
+                        columns: ["room_id"]
+                        referencedRelation: "rooms"
+                        referencedColumns: ["id"]
+                    }
+                ]
             }
         }
         Views: {
