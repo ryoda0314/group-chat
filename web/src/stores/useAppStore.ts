@@ -5,6 +5,7 @@ interface RoomHistoryItem {
     id: string
     name: string
     joinedAt: string
+    joinKey?: string
 }
 
 interface AppState {

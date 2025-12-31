@@ -12,7 +12,7 @@ import { TodoList } from '../components/TodoList'
 export function RoomPage() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { deviceId, displayName } = useAppStore()
+    const { deviceId, displayName, roomHistory } = useAppStore()
 
     const [messages, setMessages] = useState<any[]>([])
     const [text, setText] = useState('')
@@ -238,7 +238,7 @@ export function RoomPage() {
                         <div className="flex justify-center mb-4">
                             <div className="bg-white p-3 rounded-xl border border-gray-200">
                                 <QRCodeSVG
-                                    value={`${window.location.origin}/join?rid=${id}&key=placeholder`}
+                                    value={`${window.location.origin}/join?rid=${id}&key=${roomHistory.find(r => r.id === id)?.joinKey || ''}`}
                                     size={200}
                                     level="M"
                                 />

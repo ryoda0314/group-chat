@@ -20,7 +20,7 @@ export function HomePage() {
 
         setIsCreating(true)
         try {
-            const { room, token } = await invokeFunction('create_room', {
+            const { room, token, join_key } = await invokeFunction('create_room', {
                 device_id: deviceId,
                 display_name: displayName,
                 room_name: name || '新しいトークルーム'
@@ -34,7 +34,8 @@ export function HomePage() {
                 addToHistory({
                     id: room.id,
                     name: room.name || '新しいトークルーム',
-                    joinedAt: new Date().toISOString()
+                    joinedAt: new Date().toISOString(),
+                    joinKey: join_key
                 })
                 navigate(`/room/${room.id}`)
             }
