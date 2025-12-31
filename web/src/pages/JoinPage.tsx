@@ -101,7 +101,7 @@ export function JoinPage() {
     }, [])
 
     return (
-        <div className="h-screen flex flex-col bg-gray-900">
+        <div className="h-full flex flex-col bg-gray-900">
             {/* Header */}
             <header className="bg-line-green text-white px-4 py-3 flex items-center gap-3 shadow-sm z-10">
                 <button onClick={() => navigate('/home')} className="p-1 hover:bg-white/10 rounded-full transition-colors">
