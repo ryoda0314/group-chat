@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
-import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo } from 'lucide-react'
+import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo, Download } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { MathText } from '../components/MathText'
 import { Whiteboard } from '../components/Whiteboard'
@@ -240,7 +240,7 @@ export function RoomPage() {
                             </button>
                         </div>
                         <div className="flex justify-center mb-4">
-                            <div className="bg-white p-3 rounded-xl border border-gray-200">
+                            <div id="qr-code-container" className="bg-white p-3 rounded-xl border border-gray-200">
                                 <QRCodeSVG
                                     value={`${window.location.origin}/join?rid=${id}&key=${roomHistory.find(r => r.id === id)?.joinKey || ''}`}
                                     size={200}
@@ -254,6 +254,46 @@ export function RoomPage() {
                         <p className="text-center text-gray-400 text-xs mt-2 font-mono truncate">
                             ID: {id}
                         </p>
+
+                        {/* Save QR Code Button */}
+                        <button
+                            onClick={() => {
+                                const container = document.getElementById('qr-code-container')
+                                const svg = container?.querySelector('svg')
+                                if (!svg) return
+
+                                // Create canvas and draw SVG
+                                const canvas = document.createElement('canvas')
+                                const ctx = canvas.getContext('2d')
+                                const svgData = new XMLSerializer().serializeToString(svg)
+                                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+                                const url = URL.createObjectURL(svgBlob)
+
+                                const img = new window.Image()
+                                img.onload = () => {
+                                    canvas.width = img.width + 40
+                                    canvas.height = img.height + 40
+                                    if (ctx) {
+                                        ctx.fillStyle = 'white'
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height)
+                                        ctx.drawImage(img, 20, 20)
+                                    }
+                                    URL.revokeObjectURL(url)
+
+                                    // Download
+                                    const link = document.createElement('a')
+                                    link.download = `qr-code-${roomName}.png`
+                                    link.href = canvas.toDataURL('image/png')
+                                    link.click()
+                                }
+                                img.src = url
+                            }}
+                            className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-white transition-colors"
+                            style={{ backgroundColor: currentTheme.primary }}
+                        >
+                            <Download size={18} />
+                            <span>QRコードを保存</span>
+                        </button>
                     </div>
                 </div>
             )}
