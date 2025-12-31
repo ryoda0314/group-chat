@@ -17,7 +17,7 @@ function ProtectedRoute({ children }: { children: React.JSX.Element }) {
 function App() {
   return (
     <BrowserRouter>
-      <div className="h-[100dvh] bg-neutral-900 text-white font-sans max-w-md mx-auto relative shadow-2xl overflow-hidden">
+      <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans max-w-md mx-auto relative shadow-2xl overflow-hidden">
         {/* Mobile-first container: max-w-md and centered */}
         <Routes>
           <Route path="/name" element={<NamePage />} />
