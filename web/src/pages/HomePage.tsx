@@ -67,7 +67,7 @@ export function HomePage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-white">
+        <div className="flex flex-col h-full bg-white">
             {/* Header */}
             <header className="bg-line-green text-white px-4 py-4 flex items-center justify-between shadow-sm">
                 <h1 className="font-bold text-xl">トーク</h1>

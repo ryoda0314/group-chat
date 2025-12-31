@@ -16,7 +16,7 @@ export function NamePage() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen p-6 bg-white">
+        <div className="flex flex-col items-center justify-center h-full p-6 bg-white">
             <div className="w-full max-w-sm animate-enter">
                 {/* Logo */}
                 <div className="mb-10 text-center">
