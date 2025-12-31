@@ -259,6 +259,7 @@ export function RoomPage() {
                 <GraphMaker
                     onClose={() => setShowGraphMaker(false)}
                     onSend={async (graphText) => {
+                        if (!id) return
                         setShowGraphMaker(false)
                         const newMessage = {
                             id: crypto.randomUUID(),
@@ -652,6 +653,7 @@ export function RoomPage() {
                 <Whiteboard
                     onClose={() => setShowWhiteboard(false)}
                     onSend={async (blob) => {
+                        if (!id) return
                         setShowWhiteboard(false)
                         setUploading(true)
                         try {
