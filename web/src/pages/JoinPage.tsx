@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BrowserQRCodeReader } from '@zxing/browser'
 import { invokeFunction } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
-import { ChevronLeft, Camera, Keyboard } from 'lucide-react'
+import { ChevronLeft, Camera, Keyboard, ImageIcon } from 'lucide-react'
 
 export function JoinPage() {
     const [searchParams] = useSearchParams()
@@ -14,8 +15,11 @@ export function JoinPage() {
     const [error, setError] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [showManual, setShowManual] = useState(false)
+    const [isLoadingImage, setIsLoadingImage] = useState(false)
     const videoRef = useRef<HTMLVideoElement>(null)
+    const imageInputRef = useRef<HTMLInputElement>(null)
     const codeReader = useRef(new BrowserMultiFormatReader())
+    const qrReader = useRef(new BrowserQRCodeReader())
     const controlsRef = useRef<any>(null)
 
     const ridParam = searchParams.get('rid')
@@ -95,6 +99,46 @@ export function JoinPage() {
         }
     }
 
+    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsLoadingImage(true)
+        setError(null)
+
+        try {
+            // Create image URL from file
+            const imageUrl = URL.createObjectURL(file)
+
+            // Decode QR code from image
+            const result = await qrReader.current.decodeFromImageUrl(imageUrl)
+            URL.revokeObjectURL(imageUrl)
+
+            if (result) {
+                const text = result.getText()
+                try {
+                    const url = new URL(text)
+                    const rid = url.searchParams.get('rid')
+                    const key = url.searchParams.get('key')
+                    if (rid && key) {
+                        joinRoom(rid, key)
+                    } else {
+                        setError('有効なルーム参加用QRコードではありません')
+                    }
+                } catch {
+                    setError('QRコードの内容が無効です')
+                }
+            }
+        } catch (err) {
+            setError('画像からQRコードを読み取れませんでした')
+        } finally {
+            setIsLoadingImage(false)
+            if (imageInputRef.current) {
+                imageInputRef.current.value = ''
+            }
+        }
+    }
+
     useEffect(() => {
         return () => {
             stopScan()
@@ -160,8 +204,17 @@ export function JoinPage() {
                 )}
             </div>
 
+            {/* Hidden file input for image selection */}
+            <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+            />
+
             {/* Bottom Panel */}
-            <div className="bg-white p-4 space-y-3">
+            <div className="bg-white p-4 pb-[calc(16px+env(safe-area-inset-bottom))] space-y-3">
                 {error && (
                     <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl text-center">
                         {error}
@@ -171,6 +224,21 @@ export function JoinPage() {
                 <p className="text-center text-gray-500 text-sm">
                     友達のQRコードをスキャンしてルームに参加
                 </p>
+
+                {/* Image upload button */}
+                <button
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isLoadingImage}
+                    className="w-full flex items-center justify-center gap-2 py-3 font-medium border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    style={{ color: currentTheme.primary }}
+                >
+                    {isLoadingImage ? (
+                        <span className="animate-spin w-5 h-5 border-2 border-gray-300 rounded-full" style={{ borderTopColor: currentTheme.primary }} />
+                    ) : (
+                        <ImageIcon size={18} />
+                    )}
+                    <span>写真からQRコードを読み取る</span>
+                </button>
 
                 <button
                     onClick={() => setShowManual(!showManual)}
