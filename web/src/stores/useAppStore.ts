@@ -8,15 +8,30 @@ interface RoomHistoryItem {
     joinKey?: string
 }
 
+// Available theme colors
+export const THEME_COLORS = {
+    green: { name: 'グリーン', primary: '#06C755', dark: '#05a647' },
+    blue: { name: 'ブルー', primary: '#0084FF', dark: '#006ACC' },
+    purple: { name: 'パープル', primary: '#8B5CF6', dark: '#7C3AED' },
+    pink: { name: 'ピンク', primary: '#EC4899', dark: '#DB2777' },
+    orange: { name: 'オレンジ', primary: '#F97316', dark: '#EA580C' },
+    red: { name: 'レッド', primary: '#EF4444', dark: '#DC2626' },
+    teal: { name: 'ティール', primary: '#14B8A6', dark: '#0D9488' },
+} as const
+
+export type ThemeColorKey = keyof typeof THEME_COLORS
+
 interface AppState {
     deviceId: string
     displayName: string | null
     roomHistory: RoomHistoryItem[]
+    themeColor: ThemeColorKey
 
     setDisplayName: (name: string) => void
     addToHistory: (room: RoomHistoryItem) => void
     removeFromHistory: (roomId: string) => void
     clearHistory: () => void
+    setThemeColor: (color: ThemeColorKey) => void
 
     // Active Room State (not persisted)
     activeRoomToken: string | null
@@ -30,6 +45,7 @@ export const useAppStore = create<AppState>()(
             displayName: null,
             roomHistory: [],
             activeRoomToken: null,
+            themeColor: 'green' as ThemeColorKey,
 
             setDisplayName: (name) => set({ displayName: name }),
 
@@ -47,7 +63,8 @@ export const useAppStore = create<AppState>()(
             },
 
             clearHistory: () => set({ roomHistory: [] }),
-            setActiveRoomToken: (token) => set({ activeRoomToken: token })
+            setActiveRoomToken: (token) => set({ activeRoomToken: token }),
+            setThemeColor: (color) => set({ themeColor: color })
         }),
         {
             name: 'app-storage',
@@ -55,7 +72,8 @@ export const useAppStore = create<AppState>()(
             partialize: (state) => ({
                 deviceId: state.deviceId,
                 displayName: state.displayName,
-                roomHistory: state.roomHistory
+                roomHistory: state.roomHistory,
+                themeColor: state.themeColor
             })
         }
     )

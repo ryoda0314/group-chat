@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useAppStore } from '../stores/useAppStore'
+import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { MathText } from '../components/MathText'
@@ -12,7 +12,8 @@ import { TodoList } from '../components/TodoList'
 export function RoomPage() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { deviceId, displayName, roomHistory } = useAppStore()
+    const { deviceId, displayName, roomHistory, themeColor } = useAppStore()
+    const currentTheme = THEME_COLORS[themeColor]
 
     const [messages, setMessages] = useState<any[]>([])
     const [text, setText] = useState('')
@@ -190,9 +191,12 @@ export function RoomPage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-white">
-            {/* Header - LINE Green */}
-            <header className="bg-line-green text-white px-4 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex flex-col h-screen max-h-[100dvh] bg-white">
+            {/* Header - Theme Color */}
+            <header
+                className="text-white px-4 py-3 pt-[calc(12px+env(safe-area-inset-top))] flex items-center justify-between shadow-sm"
+                style={{ backgroundColor: currentTheme.primary }}
+            >
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/home')} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                         <ChevronLeft size={24} />
@@ -495,7 +499,10 @@ export function RoomPage() {
                                     )}
 
                                     {/* Message bubble */}
-                                    <div className={`px-4 py-2.5 text-[15px] leading-relaxed ${isMe ? 'bubble-mine' : 'bubble-other'}`}>
+                                    <div
+                                        className={`px-4 py-2.5 text-[15px] leading-relaxed ${isMe ? 'bubble-mine' : 'bubble-other'}`}
+                                        style={isMe ? { backgroundColor: currentTheme.primary } : undefined}
+                                    >
                                         {msg.kind === 'image' ? (
                                             <img
                                                 src={msg.body}
@@ -643,6 +650,7 @@ export function RoomPage() {
                     onClick={handleSend}
                     disabled={!text.trim()}
                     className="send-btn"
+                    style={{ backgroundColor: text.trim() ? currentTheme.primary : undefined }}
                 >
                     <Send size={18} />
                 </button>

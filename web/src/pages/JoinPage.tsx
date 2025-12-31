@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { invokeFunction } from '../lib/supabase'
-import { useAppStore } from '../stores/useAppStore'
+import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { ChevronLeft, Camera, Keyboard } from 'lucide-react'
 
 export function JoinPage() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
-    const { deviceId, displayName, addToHistory, setActiveRoomToken } = useAppStore()
+    const { deviceId, displayName, addToHistory, setActiveRoomToken, themeColor } = useAppStore()
+    const currentTheme = THEME_COLORS[themeColor]
 
     const [error, setError] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
@@ -101,9 +102,12 @@ export function JoinPage() {
     }, [])
 
     return (
-        <div className="h-full flex flex-col bg-gray-900">
+        <div className="h-screen max-h-[100dvh] flex flex-col bg-gray-900">
             {/* Header */}
-            <header className="bg-line-green text-white px-4 py-3 flex items-center gap-3 shadow-sm z-10">
+            <header
+                className="text-white px-4 py-3 pt-[calc(12px+env(safe-area-inset-top))] flex items-center gap-3 shadow-sm z-10"
+                style={{ backgroundColor: currentTheme.primary }}
+            >
                 <button onClick={() => navigate('/home')} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                     <ChevronLeft size={24} />
                 </button>
@@ -144,7 +148,10 @@ export function JoinPage() {
                             onClick={startScan}
                             className="flex flex-col items-center gap-3 text-white"
                         >
-                            <div className="w-20 h-20 rounded-full bg-line-green flex items-center justify-center shadow-lg">
+                            <div
+                                className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+                                style={{ backgroundColor: currentTheme.primary }}
+                            >
                                 <Camera size={36} />
                             </div>
                             <span className="font-medium">タップしてスキャン開始</span>
@@ -167,7 +174,8 @@ export function JoinPage() {
 
                 <button
                     onClick={() => setShowManual(!showManual)}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-line-green font-medium"
+                    className="w-full flex items-center justify-center gap-2 py-3 font-medium"
+                    style={{ color: currentTheme.primary }}
                 >
                     <Keyboard size={18} />
                     <span>コードを手入力</span>
@@ -192,7 +200,10 @@ export function JoinPage() {
                             placeholder="アクセスキー"
                             className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-line-green"
                         />
-                        <button className="w-full bg-line-green text-white p-3 rounded-xl font-bold">
+                        <button
+                            className="w-full text-white p-3 rounded-xl font-bold"
+                            style={{ backgroundColor: currentTheme.primary }}
+                        >
                             参加する
                         </button>
                     </form>

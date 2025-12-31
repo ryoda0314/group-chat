@@ -1,15 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { useAppStore } from '../stores/useAppStore'
-import { ChevronLeft, User, Trash2, Info } from 'lucide-react'
+import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
+import type { ThemeColorKey } from '../stores/useAppStore'
+import { ChevronLeft, User, Trash2, Info, Palette, Check } from 'lucide-react'
 
 export function SettingsPage() {
     const navigate = useNavigate()
-    const { displayName, setDisplayName, clearHistory, deviceId } = useAppStore()
+    const { displayName, setDisplayName, clearHistory, deviceId, themeColor, setThemeColor } = useAppStore()
+
+    const currentTheme = THEME_COLORS[themeColor]
 
     return (
-        <div className="h-screen flex flex-col bg-gray-100">
+        <div className="h-screen max-h-[100dvh] flex flex-col bg-gray-100">
             {/* Header */}
-            <header className="bg-line-green text-white px-4 py-3 flex items-center gap-3 shadow-sm">
+            <header
+                className="text-white px-4 py-3 pt-[calc(12px+env(safe-area-inset-top))] flex items-center gap-3 shadow-sm"
+                style={{ backgroundColor: currentTheme.primary }}
+            >
                 <button onClick={() => navigate('/home')} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                     <ChevronLeft size={24} />
                 </button>
@@ -46,6 +52,42 @@ export function SettingsPage() {
                             <p className="text-sm text-gray-500">デバイスID</p>
                             <p className="text-xs text-gray-400 font-mono truncate">{deviceId}</p>
                         </div>
+                    </div>
+                </div>
+
+                {/* Theme Color */}
+                <div className="bg-white mt-3 px-4">
+                    <div className="py-4">
+                        <div className="flex items-center gap-4 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <Palette size={20} className="text-gray-400" />
+                            </div>
+                            <p className="text-gray-700 font-medium">テーマカラー</p>
+                        </div>
+                        <div className="flex gap-3 flex-wrap pl-14">
+                            {(Object.keys(THEME_COLORS) as ThemeColorKey[]).map((key) => {
+                                const color = THEME_COLORS[key]
+                                const isSelected = themeColor === key
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => setThemeColor(key)}
+                                        className="relative w-12 h-12 rounded-full transition-transform hover:scale-110 active:scale-95"
+                                        style={{ backgroundColor: color.primary }}
+                                        title={color.name}
+                                    >
+                                        {isSelected && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <Check size={24} className="text-white drop-shadow-md" />
+                                            </div>
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2 pl-14">
+                            選択中: {currentTheme.name}
+                        </p>
                     </div>
                 </div>
 

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, QrCode, MessageCircle, Settings } from 'lucide-react'
-import { useAppStore } from '../stores/useAppStore'
+import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { useState } from 'react'
 import { invokeFunction, setAuthToken } from '../lib/supabase'
 
@@ -10,6 +10,8 @@ export function HomePage() {
     const displayName = useAppStore(state => state.displayName)
     const addToHistory = useAppStore(state => state.addToHistory)
     const setActiveRoomToken = useAppStore(state => state.setActiveRoomToken)
+    const themeColor = useAppStore(state => state.themeColor)
+    const currentTheme = THEME_COLORS[themeColor]
     const navigate = useNavigate()
 
     const [isCreating, setIsCreating] = useState(false)
@@ -68,9 +70,12 @@ export function HomePage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex flex-col h-screen max-h-[100dvh] bg-white">
             {/* Header */}
-            <header className="bg-line-green text-white px-4 py-4 flex items-center justify-between shadow-sm">
+            <header
+                className="text-white px-4 py-4 pt-[calc(16px+env(safe-area-inset-top))] flex items-center justify-between shadow-sm"
+                style={{ backgroundColor: currentTheme.primary }}
+            >
                 <h1 className="font-bold text-xl">トーク</h1>
                 <div className="flex items-center gap-1">
                     <button
@@ -140,12 +145,12 @@ export function HomePage() {
                 )}
             </main>
 
-            <nav className="flex items-center justify-around py-2 bg-white border-t border-gray-200">
-                <Link to="/home" className="flex flex-col items-center gap-1 text-line-green py-2 px-4">
+            <nav className="flex items-center justify-around py-2 pb-[calc(8px+env(safe-area-inset-bottom))] bg-white border-t border-gray-200">
+                <Link to="/home" className="flex flex-col items-center gap-1 py-2 px-4" style={{ color: currentTheme.primary }}>
                     <MessageCircle size={24} />
                     <span className="text-[10px] font-medium">トーク</span>
                 </Link>
-                <Link to="/join" className="flex flex-col items-center gap-1 text-gray-400 py-2 px-4 hover:text-line-green transition-colors">
+                <Link to="/join" className="flex flex-col items-center gap-1 text-gray-400 py-2 px-4 hover:opacity-80 transition-colors" style={{ ['--hover-color' as any]: currentTheme.primary }}>
                     <QrCode size={24} />
                     <span className="text-[10px] font-medium">QRスキャン</span>
                 </Link>
