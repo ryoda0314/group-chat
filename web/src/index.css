@@ -148,6 +148,9 @@ body {
   border-top: 1px solid var(--border-light);
   padding: 8px 12px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .input-field {
@@ -159,6 +162,8 @@ body {
   outline: none;
   transition: border-color 0.2s;
   color: #191919;
+  flex: 1;
+  min-width: 0;
 }
 
 .input-field::placeholder {
@@ -176,6 +181,8 @@ body {
   border-radius: 50%;
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;

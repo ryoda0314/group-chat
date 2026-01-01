@@ -578,7 +578,7 @@ export function RoomPage() {
             </main>
 
             {/* Input Bar */}
-            <div className="input-bar flex items-center gap-2 relative">
+            <div className="input-bar">
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -670,7 +670,7 @@ export function RoomPage() {
                 <button
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     disabled={uploading}
-                    className="p-2 text-gray-500 hover:text-line-green transition-colors disabled:opacity-50"
+                    className="flex-shrink-0 p-2 text-gray-500 hover:text-line-green transition-colors disabled:opacity-50"
                 >
                     {uploading ? (
                         <span className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-line-green rounded-full block" />
@@ -679,7 +679,7 @@ export function RoomPage() {
                     )}
                 </button>
                 <input
-                    className="input-field flex-1"
+                    className="input-field"
                     placeholder="メッセージを入力..."
                     value={text}
                     onChange={e => setText(e.target.value)}
