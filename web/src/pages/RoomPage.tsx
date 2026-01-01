@@ -578,7 +578,7 @@ export function RoomPage() {
             </main>
 
             {/* Input Bar */}
-            <div className="input-bar">
+            <div className="input-bar relative">
                 <input
                     type="file"
                     ref={fileInputRef}
