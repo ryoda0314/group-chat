@@ -41,7 +41,7 @@ export interface Database {
                     updated_at?: string
                 }
                 Relationships: []
-            }
+            },
             room_participants: {
                 Row: {
                     room_id: string
@@ -75,7 +75,7 @@ export interface Database {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             room_messages: {
                 Row: {
                     id: string
@@ -115,7 +115,7 @@ export interface Database {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             room_attachments: {
                 Row: {
                     id: string
