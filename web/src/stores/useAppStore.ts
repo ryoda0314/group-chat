@@ -73,7 +73,8 @@ export const useAppStore = create<AppState>()(
                 deviceId: state.deviceId,
                 displayName: state.displayName,
                 roomHistory: state.roomHistory,
-                themeColor: state.themeColor
+                themeColor: state.themeColor,
+                activeRoomToken: state.activeRoomToken
             })
         }
     )
