@@ -32,6 +32,7 @@ interface AppState {
     removeFromHistory: (roomId: string) => void
     clearHistory: () => void
     setThemeColor: (color: ThemeColorKey) => void
+    updateRoomKey: (roomId: string, newKey: string) => void
 
     // Active Room State (not persisted)
     activeRoomToken: string | null
@@ -64,7 +65,15 @@ export const useAppStore = create<AppState>()(
 
             clearHistory: () => set({ roomHistory: [] }),
             setActiveRoomToken: (token) => set({ activeRoomToken: token }),
-            setThemeColor: (color) => set({ themeColor: color })
+            setThemeColor: (color) => set({ themeColor: color }),
+
+            updateRoomKey: (roomId, newKey) => {
+                const { roomHistory } = get()
+                const updated = roomHistory.map(r =>
+                    r.id === roomId ? { ...r, joinKey: newKey } : r
+                )
+                set({ roomHistory: updated })
+            }
         }),
         {
             name: 'app-storage',
