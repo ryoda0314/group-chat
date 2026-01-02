@@ -40,7 +40,10 @@ serve(async (req) => {
     // Update Room
     const { error: updateError } = await supabaseClient
       .from('rooms')
-      .update({ join_key_hash: join_key_hash })
+      .update({
+        join_key_hash: join_key_hash,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Extend 30 days
+      })
       .eq('id', room_id)
 
     if (updateError) throw updateError

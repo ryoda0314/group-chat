@@ -19,6 +19,7 @@ export function RoomPage() {
     const [text, setText] = useState('')
     const [loading, setLoading] = useState(true)
     const [roomName, setRoomName] = useState('Loading...')
+    const [expiresAt, setExpiresAt] = useState<string | null>(null)
     const [participants, setParticipants] = useState<any[]>([])
     const [showQR, setShowQR] = useState(false)
     const [showMembers, setShowMembers] = useState(false)
@@ -47,11 +48,13 @@ export function RoomPage() {
             // Fetch room name
             const { data: roomData } = await supabase
                 .from('rooms')
-                .select('name')
+                .select('name, expires_at')
                 .eq('id', id)
                 .single()
-            if (roomData?.name) setRoomName(roomData.name)
-            else setRoomName('グループチャット')
+            if (roomData) {
+                setRoomName(roomData.name || 'グループチャット')
+                setExpiresAt(roomData.expires_at)
+            }
 
             // Fetch participants
             const { data: parts } = await supabase
@@ -225,9 +228,15 @@ export function RoomPage() {
                             onClick={() => setShowMembers(true)}
                             className="flex items-center gap-1 text-white/80 text-xs hover:text-white transition-colors"
                         >
-                            <Users size={12} />
-                            <span>{participants.length}人のメンバー</span>
+                            <Users size={16} />
+                            <span>{participants.length}人の参加者</span>
                         </button>
+                        {expiresAt && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                                <TrendingUp size={14} />
+                                <span>期限: {new Date(expiresAt).toLocaleString()}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -427,27 +436,56 @@ export function RoomPage() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto space-y-2">
-                            {participants.map((p, i) => (
-                                <div key={p.device_id || i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50">
-                                    <div className="avatar">
-                                        {getInitial(p.display_name)}
+                            <h3 className="font-medium mb-3">参加者リスト</h3>
+                            <div className="space-y-3 mb-6">
+                                {participants.map((p) => (
+                                    <div key={p.device_id} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs ${p.device_id === deviceId ? 'bg-green-500' : 'bg-gray-400'
+                                                }`}>
+                                                {p.display_name?.slice(0, 1) || '?'}
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-sm">{p.display_name}</div>
+                                                <div className="text-xs text-gray-400">
+                                                    {new Date(p.joined_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {p.device_id === deviceId && (
+                                            <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Me</span>
+                                        )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 truncate">
-                                            {p.display_name}
-                                            {p.device_id === deviceId && (
-                                                <span className="ml-2 text-xs bg-line-green text-white px-2 py-0.5 rounded-full">自分</span>
-                                            )}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {new Date(p.joined_at).toLocaleDateString('ja-JP')} に参加
-                                        </p>
+                                ))}
+                            </div>
+
+                            <div className="border-t pt-4">
+                                <h4 className="text-sm font-medium mb-2">部屋の設定</h4>
+                                {expiresAt && (
+                                    <div className="mb-4 bg-gray-50 p-3 rounded-lg">
+                                        <div className="text-xs text-gray-500 mb-1">有効期限</div>
+                                        <div className="text-sm font-medium mb-2">{new Date(expiresAt).toLocaleString()}</div>
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('有効期限を30日間延長し、QRコードを更新しますか？\n(古いQRコードは無効になります)')) return
+                                                try {
+                                                    await invokeFunction('rotate_qr', {
+                                                        room_id: id,
+                                                        device_id: deviceId
+                                                    }, activeRoomToken || undefined)
+                                                    alert('更新しました。ページをリロードします。')
+                                                    window.location.reload()
+                                                } catch (e) {
+                                                    alert('更新に失敗しました: ' + e)
+                                                }
+                                            }}
+                                            className="w-full text-sm bg-white border border-gray-300 py-1.5 rounded shadow-sm hover:bg-gray-50"
+                                        >
+                                            期限延長・QR更新
+                                        </button>
                                     </div>
-                                </div>
-                            ))}
-                            {participants.length === 0 && (
-                                <p className="text-center text-gray-400 py-4">メンバーがいません</p>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
