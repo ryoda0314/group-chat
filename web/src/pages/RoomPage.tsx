@@ -139,8 +139,10 @@ export function RoomPage() {
     }, [id, roomHistory])
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+        if (messages.length > 0) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+        }
+    }, [messages, loading])
 
     const handleSend = async () => {
         if (!text.trim() || !id) return
