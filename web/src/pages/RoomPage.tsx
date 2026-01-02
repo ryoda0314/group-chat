@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, setAuthToken, invokeFunction } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo, Download } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { MathText } from '../components/MathText'
 import { Whiteboard } from '../components/Whiteboard'
 import { GraphMaker } from '../components/GraphMaker'
@@ -372,7 +372,7 @@ export function RoomPage() {
                         <div className="flex justify-center mb-4">
                             <div id="qr-code-container" className="bg-white p-3 rounded-xl border border-gray-200">
                                 {currentJoinKey ? (
-                                    <QRCodeSVG
+                                    <QRCodeCanvas
                                         value={`${window.location.origin}/join/${id}?key=${currentJoinKey}`}
                                         size={256}
                                         level="M"
@@ -392,6 +392,9 @@ export function RoomPage() {
                         </p>
                         <p className="text-center text-gray-400 text-xs font-mono truncate mb-4">
                             ID: {id}
+                        </p>
+                        <p className="text-center text-gray-300 text-[10px] break-all mb-4 px-4 bg-gray-50 rounded py-1 border border-gray-100">
+                            Key: {currentJoinKey}
                         </p>
 
                         {expiresAt && (
