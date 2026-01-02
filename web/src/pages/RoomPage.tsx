@@ -374,9 +374,11 @@ export function RoomPage() {
                                 {currentJoinKey ? (
                                     <QRCodeSVG
                                         value={`${window.location.origin}/join/${id}?key=${currentJoinKey}`}
-                                        size={200}
-                                        level="Q"
+                                        size={256}
+                                        level="M"
                                         includeMargin={true}
+                                        bgColor="#FFFFFF"
+                                        fgColor="#000000"
                                     />
                                 ) : (
                                     <div className="w-[200px] h-[200px] flex items-center justify-center text-gray-400 text-xs text-center p-4 bg-gray-50 rounded">
