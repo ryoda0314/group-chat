@@ -31,7 +31,9 @@ export async function invokeFunction(name: string, body: any, token?: string) {
         headers['Authorization'] = `Bearer ${token}`
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+    const url = `${supabaseUrl}/functions/v1/${name}`
+    console.log(`Invoking Edge Function: ${url}`)
+    const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(body), // Explicitly stringify the body
