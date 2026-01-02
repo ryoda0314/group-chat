@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-serve(async (req) => {
+serve(async (req: Request) => {
     const env = Deno.env.toObject()
     // Filter out potentially sensitive keys if needed, but for local debugging we want to see everything relevant
     const keys = Object.keys(env).sort()

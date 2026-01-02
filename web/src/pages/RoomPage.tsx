@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, setAuthToken } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo, Download } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -12,7 +12,7 @@ import { TodoList } from '../components/TodoList'
 export function RoomPage() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { deviceId, displayName, roomHistory, themeColor } = useAppStore()
+    const { deviceId, displayName, roomHistory, themeColor, activeRoomToken } = useAppStore()
     const currentTheme = THEME_COLORS[themeColor]
 
     const [messages, setMessages] = useState<any[]>([])
@@ -37,6 +37,11 @@ export function RoomPage() {
 
     useEffect(() => {
         if (!id) return
+
+        // Set auth token for RLS
+        if (activeRoomToken) {
+            setAuthToken(activeRoomToken)
+        }
 
         const fetchRoom = async () => {
             // Fetch room name
@@ -127,14 +132,14 @@ export function RoomPage() {
             // Upload to Supabase Storage
             const filePath = `${id}/${Date.now()}_${file.name}`
             const { error: uploadError } = await supabase.storage
-                .from('attachments')
+                .from('room-uploads')
                 .upload(filePath, file)
 
             if (uploadError) throw uploadError
 
             // Get public URL
             const { data: urlData } = supabase.storage
-                .from('attachments')
+                .from('room-uploads')
                 .getPublicUrl(filePath)
 
             // Determine if image or file
@@ -709,13 +714,13 @@ export function RoomPage() {
                             const filePath = `${id}/${fileName}`
 
                             const { error: uploadError } = await supabase.storage
-                                .from('attachments')
+                                .from('room-uploads')
                                 .upload(filePath, blob, { contentType: 'image/png' })
 
                             if (uploadError) throw uploadError
 
                             const { data: urlData } = supabase.storage
-                                .from('attachments')
+                                .from('room-uploads')
                                 .getPublicUrl(filePath)
 
                             const newMessage = {
