@@ -686,23 +686,37 @@ export function RoomPage() {
                                 try {
                                     const response = await fetch(previewImage);
                                     const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.download = `image-${Date.now()}.png`; // Simple download
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    window.URL.revokeObjectURL(url);
+                                    const file = new File([blob], `image-${Date.now()}.png`, { type: blob.type });
+
+                                    // Try Web Share API first (Best for Mobile "Save to Photos")
+                                    if (navigator.share && navigator.canShare({ files: [file] })) {
+                                        await navigator.share({
+                                            files: [file],
+                                            title: '画像を保存',
+                                        })
+                                    } else {
+                                        // Fallback to Download Link (Desktop / Unsupported browsers)
+                                        const url = window.URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = `image-${Date.now()}.png`; // Simple download
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        window.URL.revokeObjectURL(url);
+                                    }
                                 } catch (err) {
-                                    console.error('Download failed', err)
-                                    alert('保存に失敗しました')
+                                    console.error('Save failed', err)
+                                    // If share is cancelled by user, it throws an error in some browsers, ignore it or show simplified alert
+                                    if ((err as Error).name !== 'AbortError') {
+                                        alert('保存または共有に失敗しました')
+                                    }
                                 }
                             }}
                             className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
                         >
                             <Download size={20} />
-                            保存
+                            保存 / 共有
                         </button>
                     </div>
                 </div>
