@@ -24,6 +24,7 @@ export function RoomPage() {
     const [loading, setLoading] = useState(true)
     const [roomName, setRoomName] = useState('Loading...')
     const [expiresAt, setExpiresAt] = useState<string | null>(null)
+    const [isOwner, setIsOwner] = useState(false)
     const [participants, setParticipants] = useState<any[]>([])
     const [showQR, setShowQR] = useState(false)
     const [showMembers, setShowMembers] = useState(false)
@@ -52,12 +53,13 @@ export function RoomPage() {
             // Fetch room name
             const { data: roomData } = await supabase
                 .from('rooms')
-                .select('name, expires_at')
+                .select('name, expires_at, owner_device_id')
                 .eq('id', id)
                 .single()
             if (roomData) {
                 setRoomName(roomData.name || 'グループチャット')
                 setExpiresAt(roomData.expires_at)
+                setIsOwner(roomData.owner_device_id === deviceId)
             }
 
             // Fetch participants
@@ -297,24 +299,26 @@ export function RoomPage() {
                             <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
                                 <div className="text-xs text-gray-500 mb-1">QRコード有効期限</div>
                                 <div className="text-sm font-medium mb-3">{new Date(expiresAt).toLocaleString()}</div>
-                                <button
-                                    onClick={async () => {
-                                        if (!confirm('QRコードを更新しますか？\n(古いQRコードは無効になります)')) return
-                                        try {
-                                            await invokeFunction('rotate_qr', {
-                                                room_id: id,
-                                                device_id: deviceId
-                                            }, activeRoomToken || undefined)
-                                            alert('更新しました。ページをリロードします。')
-                                            window.location.reload()
-                                        } catch (e) {
-                                            alert('更新に失敗しました: ' + e)
-                                        }
-                                    }}
-                                    className="w-full text-sm bg-white border border-gray-300 py-2 rounded shadow-sm hover:bg-gray-50 font-medium text-gray-700"
-                                >
-                                    QRコード更新
-                                </button>
+                                {isOwner && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm('QRコードを更新しますか？\n(古いQRコードは無効になります)')) return
+                                            try {
+                                                await invokeFunction('rotate_qr', {
+                                                    room_id: id,
+                                                    device_id: deviceId
+                                                }, activeRoomToken || undefined)
+                                                alert('更新しました。ページをリロードします。')
+                                                window.location.reload()
+                                            } catch (e) {
+                                                alert('更新に失敗しました: ' + e)
+                                            }
+                                        }}
+                                        className="w-full text-sm bg-white border border-gray-300 py-2 rounded shadow-sm hover:bg-gray-50 font-medium text-gray-700"
+                                    >
+                                        QRコード更新
+                                    </button>
+                                )}
                             </div>
                         )}
 
