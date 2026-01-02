@@ -118,7 +118,10 @@ export function RoomPage() {
         if (!id) return
 
         // 1. Try URL param (most recent)
-        const urlKey = location.search.split('key=')[1]?.replace('&', '')
+        // Use URLSearchParams for robust parsing
+        const params = new URLSearchParams(location.search)
+        const urlKey = params.get('key')
+
         if (urlKey) {
             setCurrentJoinKey(urlKey)
             // Update history if exists
