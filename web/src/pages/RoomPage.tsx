@@ -140,7 +140,9 @@ export function RoomPage() {
 
     useEffect(() => {
         if (messages.length > 0) {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+            setTimeout(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+            }, 100)
         }
     }, [messages, loading])
 
