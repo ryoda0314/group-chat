@@ -12,7 +12,11 @@ import { TodoList } from '../components/TodoList'
 export function RoomPage() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { deviceId, displayName, roomHistory, themeColor, activeRoomToken } = useAppStore()
+    const appStore = useAppStore()
+    const deviceId = appStore.deviceId
+    const displayName = appStore.displayName
+    const themeColor = appStore.themeColor
+    const activeRoomToken = appStore.activeRoomToken
     const currentTheme = THEME_COLORS[themeColor]
 
     const [messages, setMessages] = useState<any[]>([])
@@ -231,12 +235,6 @@ export function RoomPage() {
                             <Users size={16} />
                             <span>{participants.length}人の参加者</span>
                         </button>
-                        {expiresAt && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                                <TrendingUp size={14} />
-                                <span>期限: {new Date(expiresAt).toLocaleString()}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -275,10 +273,10 @@ export function RoomPage() {
                                 />
                             </div>
                         </div>
-                        <p className="text-center text-gray-500 text-sm mb-4">
+                        <p className="text-center text-gray-500 text-sm mb-2">
                             このQRコードをスキャンしてグループに参加
                         </p>
-                        <p className="text-center text-gray-400 text-xs mt-2 font-mono truncate mb-4">
+                        <p className="text-center text-gray-400 text-xs font-mono truncate mb-4">
                             ID: {id}
                         </p>
 
@@ -307,527 +305,521 @@ export function RoomPage() {
                             </div>
                         )}
 
-                    // Create canvas and draw SVG
-                        const canvas = document.createElement('canvas')
-                        const ctx = canvas.getContext('2d')
-                        const svgData = new XMLSerializer().serializeToString(svg)
-                        const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8' })
-                        const url = URL.createObjectURL(svgBlob)
+                        <button
+                            onClick={() => {
+                                const container = document.getElementById('qr-code-container')
+                                const svg = container?.querySelector('svg')
+                                if (!svg) return
 
-                        const img = new window.Image()
-                    img.onload = () => {
-                            canvas.width = img.width + 40
-                        canvas.height = img.height + 40
-                        if (ctx) {
-                            ctx.fillStyle = 'white'
-                            ctx.fillRect(0, 0, canvas.width, canvas.height)
-                        ctx.drawImage(img, 20, 20)
-                        }
-                        URL.revokeObjectURL(url)
+                                // Create canvas and draw SVG
+                                const canvas = document.createElement('canvas')
+                                const ctx = canvas.getContext('2d')
+                                const svgData = new XMLSerializer().serializeToString(svg)
+                                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+                                const url = URL.createObjectURL(svgBlob)
 
-                        // Download
-                        const link = document.createElement('a')
-                        link.download = `qr-code-${roomName}.png`
-                        link.href = canvas.toDataURL('image/png')
-                        link.click()
-                    }
-                        img.src = url
-                }}
-                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-white transition-colors"
-                        style={{ backgroundColor: currentTheme.primary }}
-            >
-                        <Download size={18} />
-                        <span>QRコードを保存</span>
-                    </button>
-                </div>
-                </div >
-    )
-}
+                                const img = new window.Image()
+                                img.onload = () => {
+                                    canvas.width = img.width + 40
+                                    canvas.height = img.height + 40
+                                    if (ctx) {
+                                        ctx.fillStyle = 'white'
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height)
+                                        ctx.drawImage(img, 20, 20)
+                                    }
+                                    URL.revokeObjectURL(url)
 
-{/* Graph Maker */ }
-{
-    showGraphMaker && (
-        <GraphMaker
-            onClose={() => setShowGraphMaker(false)}
-            onSend={async (graphText) => {
-                if (!id) return
-                setShowGraphMaker(false)
-                const newMessage = {
-                    id: crypto.randomUUID(),
-                    sender_name_snapshot: displayName,
-                    sender_device_id: deviceId,
-                    body: graphText,
-                    kind: 'text',
-                    created_at: new Date().toISOString()
-                }
-                setMessages(prev => [...prev, newMessage])
-
-                // Save to DB
-                try {
-                    await supabase.from('room_messages').insert({
-                        room_id: id,
-                        sender_device_id: deviceId,
-                        sender_name_snapshot: displayName || 'Anon',
-                        kind: 'text',
-                        body: graphText
-                    })
-                } catch (err) {
-                    console.error('Failed to send graph:', err)
-                }
-            }}
-        />
-    )
-}
-
-{/* Help Modal */ }
-{
-    showHelp && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowHelp(false)}>
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-enter" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-lg text-gray-900">スマート機能の使い方</h2>
-                    <button onClick={() => setShowHelp(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="space-y-6 text-sm text-gray-700">
-                    {/* Code */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                            <span className="bg-gray-100 p-1 rounded">{'```'}</span> コードの共有
-                        </h3>
-                        <p className="mb-2">コードブロックを作成します。言語を指定すると色分けされます。</p>
-                        <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
-                            <span className="text-gray-400">```python</span><br />
-                            print("Hello")<br />
-                            <span className="text-gray-400">```</span>
-                        </div>
-                    </div>
-
-                    {/* Math */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                            <span className="bg-gray-100 p-1 rounded">$</span> 数式の入力 (LaTeX)
-                        </h3>
-                        <p className="mb-2">
-                            インライン数式は <span className="font-mono bg-gray-100 px-1">$...$</span>、<br />
-                            ディスプレイ数式は <span className="font-mono bg-gray-100 px-1">$$...$$</span> で囲みます。
-                        </p>
-                        <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
-                            {'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}'}
-                        </div>
-                    </div>
-
-                    {/* Graph */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                            <span className="bg-gray-100 p-1 rounded">graph:</span> グラフの描画
-                        </h3>
-                        <p className="mb-2">数式のグラフを描画します。範囲指定も可能です。</p>
-                        <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs space-y-2">
-                            <p>基本: <span className="text-green-600">graph: sin(x)</span></p>
-                            <p>範囲指定: <span className="text-green-600">graph: x^2 | x:[-5, 5]</span></p>
-                            <p>Y軸も指定: <span className="text-green-600">graph: 1/x | x:[0.1, 5] | y:[0, 10]</span></p>
-                        </div>
-                    </div>
-
-                    {/* Chemistry */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                            <span className="bg-gray-100 p-1 rounded">\ce</span> 化学式
-                        </h3>
-                        <p className="mb-2">{`\\ce{...}`}を使って化学式をきれいに表示できます。</p>
-                        <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
-                            {`\\ce{H2O}`}<br />
-                            {`\\ce{CO2 + H2O -> H2CO3}`}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-{/* Members Modal */ }
-{
-    showMembers && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowMembers(false)}>
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full animate-enter max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-lg text-gray-900">メンバー ({participants.length})</h2>
-                    <button onClick={() => setShowMembers(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="flex-1 overflow-y-auto space-y-2">
-                    <h3 className="font-medium mb-3">参加者リスト</h3>
-                    <div className="space-y-3 mb-6">
-                        {participants.map((p) => (
-                            <div key={p.device_id} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs ${p.device_id === deviceId ? 'bg-green-500' : 'bg-gray-400'
-                                        }`}>
-                                        {p.display_name?.slice(0, 1) || '?'}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-sm">{p.display_name}</div>
-                                        <div className="text-xs text-gray-400">
-                                            {new Date(p.joined_at).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                                {p.device_id === deviceId && (
-                                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Me</span>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                </div>
-            </div>
-        </div>
-                </div >
-            )
-}
-
-{/* TODO List Modal */ }
-{
-    showTodoList && id && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setShowTodoList(false)}>
-            <div
-                className="w-full max-w-sm h-full bg-white shadow-xl animate-enter"
-                onClick={e => e.stopPropagation()}
-            >
-                <TodoList roomId={id} onClose={() => setShowTodoList(false)} />
-            </div>
-        </div>
-    )
-}
-
-{/* Settings Modal */ }
-{
-    showSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSettings(false)}>
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full animate-enter" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-lg text-gray-900">設定</h2>
-                    <button onClick={() => setShowSettings(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-sm text-gray-500">ルーム名</p>
-                        <p className="font-medium text-gray-900">{roomName}</p>
-                    </div>
-
-                    {expiresAt && (
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                            <div className="text-xs text-gray-500 mb-1">有効期限</div>
-                            <div className="text-sm font-medium">{new Date(expiresAt).toLocaleString()}</div>
-                        </div>
-                    )}
-
-                    <button
-                        onClick={async () => {
-                            if (confirm('このトークルームを退出しますか？履歴から削除されます。')) {
-                                if (id) {
-                                    removeFromHistory(id)
+                                    // Download
+                                    const link = document.createElement('a')
+                                    link.download = `qr-code-${roomName}.png`
+                                    link.href = canvas.toDataURL('image/png')
+                                    link.click()
                                 }
-                                navigate('/home')
-                            }
-                        }}
-                        className="w-full flex items-center gap-3 p-4 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                        <LogOut size={20} />
-                        <span className="font-medium">トークルームを退出</span>
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setShowSettings(false)
-                            setShowHelp(true)
-                        }}
-                        className="w-full flex items-center gap-3 p-4 rounded-xl text-line-green hover:bg-green-50 transition-colors border-t border-gray-100"
-                    >
-                        <HelpCircle size={20} />
-                        <span className="font-medium">機能の使い方を見る</span>
-                    </button>
+                                img.src = url
+                            }}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-white transition-colors mb-2"
+                            style={{ backgroundColor: currentTheme.primary }}
+                        >
+                            <Download size={18} />
+                            <span>QRコードを保存</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-    )
-}
+            )}
 
-{/* Messages - Blue-ish chat background like LINE */ }
-<main className="flex-1 overflow-y-auto bg-chat-bg p-4 space-y-3">
-    {/* Date Separator */}
-    <div className="date-separator">
-        <span>{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-    </div>
+            {/* Graph Maker */}
+            {showGraphMaker && (
+                <GraphMaker
+                    onClose={() => setShowGraphMaker(false)}
+                    onSend={async (graphText) => {
+                        if (!id) return
+                        setShowGraphMaker(false)
+                        const newMessage = {
+                            id: crypto.randomUUID(),
+                            sender_name_snapshot: displayName,
+                            sender_device_id: deviceId,
+                            body: graphText,
+                            kind: 'text',
+                            created_at: new Date().toISOString()
+                        }
+                        setMessages(prev => [...prev, newMessage])
 
-    {messages.length === 0 && !loading && (
-        <div className="text-center text-white/70 mt-10 text-sm">
-            メッセージはまだありません
-        </div>
-    )}
+                        // Save to DB
+                        try {
+                            await supabase.from('room_messages').insert({
+                                room_id: id,
+                                sender_device_id: deviceId,
+                                sender_name_snapshot: displayName || 'Anon',
+                                kind: 'text',
+                                body: graphText
+                            })
+                        } catch (err) {
+                            console.error('Failed to send graph:', err)
+                        }
+                    }}
+                />
+            )}
 
-    {messages.map((msg, i) => {
-        const isMe = msg.sender_device_id === deviceId
-        const showAvatar = !isMe && (i === 0 || messages[i - 1]?.sender_device_id !== msg.sender_device_id)
+            {/* Help Modal */}
+            {showHelp && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowHelp(false)}>
+                    <div className="bg-white rounded-2xl p-6 mx-4 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-enter" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="font-bold text-lg text-gray-900">スマート機能の使い方</h2>
+                            <button onClick={() => setShowHelp(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="space-y-6 text-sm text-gray-700">
+                            {/* Code */}
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <span className="bg-gray-100 p-1 rounded">{'```'}</span> コードの共有
+                                </h3>
+                                <p className="mb-2">コードブロックを作成します。言語を指定すると色分けされます。</p>
+                                <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
+                                    <span className="text-gray-400">```python</span><br />
+                                    print("Hello")<br />
+                                    <span className="text-gray-400">```</span>
+                                </div>
+                            </div>
 
-        return (
-            <div key={msg.id || i} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-enter w-full`}>
-                {/* Avatar for others */}
-                {!isMe && (
-                    <div className="mr-2 flex-shrink-0">
-                        {showAvatar ? (
-                            <div className="avatar">{getInitial(msg.sender_name_snapshot)}</div>
-                        ) : (
-                            <div className="w-9" /> // Spacer
-                        )}
+                            {/* Math */}
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <span className="bg-gray-100 p-1 rounded">$</span> 数式の入力 (LaTeX)
+                                </h3>
+                                <p className="mb-2">
+                                    インライン数式は <span className="font-mono bg-gray-100 px-1">$...$</span>、<br />
+                                    ディスプレイ数式は <span className="font-mono bg-gray-100 px-1">$$...$$</span> で囲みます。
+                                </p>
+                                <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
+                                    {'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}'}
+                                </div>
+                            </div>
+
+                            {/* Graph */}
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <span className="bg-gray-100 p-1 rounded">graph:</span> グラフの描画
+                                </h3>
+                                <p className="mb-2">数式のグラフを描画します。範囲指定も可能です。</p>
+                                <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs space-y-2">
+                                    <p>基本: <span className="text-green-600">graph: sin(x)</span></p>
+                                    <p>範囲指定: <span className="text-green-600">graph: x^2 | x:[-5, 5]</span></p>
+                                    <p>Y軸も指定: <span className="text-green-600">graph: 1/x | x:[0.1, 5] | y:[0, 10]</span></p>
+                                </div>
+                            </div>
+
+                            {/* Chemistry */}
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <span className="bg-gray-100 p-1 rounded">\ce</span> 化学式
+                                </h3>
+                                <p className="mb-2">{`\\ce{...}`}を使って化学式をきれいに表示できます。</p>
+                                <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
+                                    {`\\ce{H2O}`}<br />
+                                    {`\\ce{CO2 + H2O -> H2CO3}`}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Members Modal */}
+            {showMembers && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowMembers(false)}>
+                    <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full animate-enter max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="font-bold text-lg text-gray-900">メンバー ({participants.length})</h2>
+                            <button onClick={() => setShowMembers(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-2">
+                            <h3 className="font-medium mb-3">参加者リスト</h3>
+                            <div className="space-y-3 mb-6">
+                                {participants.map((p) => (
+                                    <div key={p.device_id} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs ${p.device_id === deviceId ? 'bg-green-500' : 'bg-gray-400'
+                                                }`}>
+                                                {p.display_name?.slice(0, 1) || '?'}
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-sm">{p.display_name}</div>
+                                                <div className="text-xs text-gray-400">
+                                                    {new Date(p.joined_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {p.device_id === deviceId && (
+                                            <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Me</span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TODO List Modal */}
+            {showTodoList && id && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setShowTodoList(false)}>
+                    <div
+                        className="w-full max-w-sm h-full bg-white shadow-xl animate-enter"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <TodoList roomId={id} onClose={() => setShowTodoList(false)} />
+                    </div>
+                </div>
+            )}
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSettings(false)}>
+                    <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full animate-enter" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="font-bold text-lg text-gray-900">設定</h2>
+                            <button onClick={() => setShowSettings(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="p-4 bg-gray-50 rounded-xl">
+                                <p className="text-sm text-gray-500">ルーム名</p>
+                                <p className="font-medium text-gray-900">{roomName}</p>
+                            </div>
+
+                            {expiresAt && (
+                                <div className="p-4 bg-gray-50 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1">有効期限</div>
+                                    <div className="text-sm font-medium">{new Date(expiresAt).toLocaleString()}</div>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={async () => {
+                                    if (confirm('このトークルームを退出しますか？履歴から削除されます。')) {
+                                        if (id) {
+                                            removeFromHistory(id)
+                                        }
+                                        navigate('/home')
+                                    }
+                                }}
+                                className="w-full flex items-center gap-3 p-4 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                                <LogOut size={20} />
+                                <span className="font-medium">トークルームを退出</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setShowSettings(false)
+                                    setShowHelp(true)
+                                }}
+                                className="w-full flex items-center gap-3 p-4 rounded-xl text-line-green hover:bg-green-50 transition-colors border-t border-gray-100"
+                            >
+                                <HelpCircle size={20} />
+                                <span className="font-medium">機能の使い方を見る</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Messages - Blue-ish chat background like LINE */}
+            <main className="flex-1 overflow-y-auto bg-chat-bg p-4 space-y-3">
+                {/* Date Separator */}
+                <div className="date-separator">
+                    <span>{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+
+                {messages.length === 0 && !loading && (
+                    <div className="text-center text-white/70 mt-10 text-sm">
+                        メッセージはまだありません
                     </div>
                 )}
 
-                <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                    {/* Sender name for others */}
-                    {!isMe && showAvatar && (
-                        <span className="text-xs text-gray-600 mb-1 ml-1">{msg.sender_name_snapshot}</span>
-                    )}
+                {messages.map((msg, i) => {
+                    const isMe = msg.sender_device_id === deviceId
+                    const showAvatar = !isMe && (i === 0 || messages[i - 1]?.sender_device_id !== msg.sender_device_id)
 
-                    <div className={`flex items-end gap-1 ${isMe ? 'flex-row' : 'flex-row'}`}>
-                        {/* Timestamp for my messages (left side) */}
-                        {isMe && (
-                            <span className="timestamp flex-shrink-0">{formatTime(msg.created_at)}</span>
-                        )}
-
-                        {/* Message bubble */}
-                        <div
-                            className={`px-4 py-2.5 text-[15px] leading-relaxed ${isMe ? 'bubble-mine' : 'bubble-other'}`}
-                            style={isMe ? { backgroundColor: currentTheme.primary } : undefined}
-                        >
-                            {msg.kind === 'image' ? (
-                                <img
-                                    src={msg.body}
-                                    alt="shared image"
-                                    className="max-w-full rounded-lg cursor-pointer"
-                                    onClick={() => window.open(msg.body, '_blank')}
-                                />
-                            ) : msg.kind === 'file' ? (
-                                <a
-                                    href={msg.body}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-inherit hover:underline"
-                                >
-                                    <FileText size={20} />
-                                    <span className="truncate">{msg.filename || 'ファイル'}</span>
-                                </a>
-                            ) : (
-                                <MathText text={msg.body || ''} />
+                    return (
+                        <div key={msg.id || i} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-enter w-full`}>
+                            {/* Avatar for others */}
+                            {!isMe && (
+                                <div className="mr-2 flex-shrink-0">
+                                    {showAvatar ? (
+                                        <div className="avatar">{getInitial(msg.sender_name_snapshot)}</div>
+                                    ) : (
+                                        <div className="w-9" /> // Spacer
+                                    )}
+                                </div>
                             )}
+
+                            <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                {/* Sender name for others */}
+                                {!isMe && showAvatar && (
+                                    <span className="text-xs text-gray-600 mb-1 ml-1">{msg.sender_name_snapshot}</span>
+                                )}
+
+                                <div className={`flex items-end gap-1 ${isMe ? 'flex-row' : 'flex-row'}`}>
+                                    {/* Timestamp for my messages (left side) */}
+                                    {isMe && (
+                                        <span className="timestamp flex-shrink-0">{formatTime(msg.created_at)}</span>
+                                    )}
+
+                                    {/* Message bubble */}
+                                    <div
+                                        className={`px-4 py-2.5 text-[15px] leading-relaxed ${isMe ? 'bubble-mine' : 'bubble-other'}`}
+                                        style={isMe ? { backgroundColor: currentTheme.primary } : undefined}
+                                    >
+                                        {msg.kind === 'image' ? (
+                                            <img
+                                                src={msg.body}
+                                                alt="shared image"
+                                                className="max-w-full rounded-lg cursor-pointer"
+                                                onClick={() => window.open(msg.body, '_blank')}
+                                            />
+                                        ) : msg.kind === 'file' ? (
+                                            <a
+                                                href={msg.body}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 text-inherit hover:underline"
+                                            >
+                                                <FileText size={20} />
+                                                <span className="truncate">{msg.filename || 'ファイル'}</span>
+                                            </a>
+                                        ) : (
+                                            <MathText text={msg.body || ''} />
+                                        )}
+                                    </div>
+
+                                    {/* Timestamp for others (right side) */}
+                                    {!isMe && (
+                                        <span className="timestamp flex-shrink-0">{formatTime(msg.created_at)}</span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
+                    )
+                })}
+                <div ref={messagesEndRef} />
+            </main>
 
-                        {/* Timestamp for others (right side) */}
-                        {!isMe && (
-                            <span className="timestamp flex-shrink-0">{formatTime(msg.created_at)}</span>
-                        )}
+            {/* Input Bar */}
+            <div className="input-bar relative">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                />
+
+                {/* Attachment Menu */}
+                {showAttachMenu && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden animate-enter">
+                        <button
+                            onClick={() => {
+                                fileInputRef.current!.accept = 'image/*'
+                                fileInputRef.current?.click()
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <Image size={20} className="text-green-600" />
+                            </div>
+                            <span className="font-medium">画像</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                fileInputRef.current!.accept = 'video/*'
+                                fileInputRef.current?.click()
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                <Video size={20} className="text-purple-600" />
+                            </div>
+                            <span className="font-medium">動画</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                fileInputRef.current!.accept = '*/*'
+                                fileInputRef.current?.click()
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <File size={20} className="text-blue-600" />
+                            </div>
+                            <span className="font-medium">ファイル</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowWhiteboard(true)
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                                <PenTool size={20} className="text-orange-600" />
+                            </div>
+                            <span className="font-medium">ホワイトボード</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowGraphMaker(true)
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <TrendingUp size={20} className="text-indigo-600" />
+                            </div>
+                            <span className="font-medium">グラフ作成</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowTodoList(true)
+                                setShowAttachMenu(false)
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+                                <ListTodo size={20} className="text-teal-600" />
+                            </div>
+                            <span className="font-medium">タスクリスト</span>
+                        </button>
                     </div>
-                </div>
+                )}
+
+                <button
+                    onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    disabled={uploading}
+                    className="flex-shrink-0 p-2 text-gray-500 hover:text-line-green transition-colors disabled:opacity-50"
+                >
+                    {uploading ? (
+                        <span className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-line-green rounded-full block" />
+                    ) : (
+                        <Plus size={24} className={showAttachMenu ? 'rotate-45 transition-transform' : 'transition-transform'} />
+                    )}
+                </button>
+                <input
+                    className="input-field"
+                    placeholder="メッセージを入力..."
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                    onFocus={() => setShowAttachMenu(false)}
+                />
+                <button
+                    onClick={handleSend}
+                    disabled={!text.trim()}
+                    className="send-btn"
+                    style={{ backgroundColor: text.trim() ? currentTheme.primary : undefined }}
+                >
+                    <Send size={18} />
+                </button>
             </div>
-        )
-    })}
-    <div ref={messagesEndRef} />
-</main>
 
-{/* Input Bar */ }
-<div className="input-bar relative">
-    <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        className="hidden"
-    />
+            {/* Whiteboard */}
+            {
+                showWhiteboard && (
+                    <Whiteboard
+                        onClose={() => setShowWhiteboard(false)}
+                        onSend={async (blob) => {
+                            if (!id) return
+                            setShowWhiteboard(false)
+                            setUploading(true)
+                            try {
+                                const fileName = `whiteboard_${Date.now()}.png`
+                                const filePath = `${id}/${fileName}`
 
-    {/* Attachment Menu */}
-    {showAttachMenu && (
-        <div className="absolute bottom-full left-0 mb-2 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden animate-enter">
-            <button
-                onClick={() => {
-                    fileInputRef.current!.accept = 'image/*'
-                    fileInputRef.current?.click()
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Image size={20} className="text-green-600" />
-                </div>
-                <span className="font-medium">画像</span>
-            </button>
-            <button
-                onClick={() => {
-                    fileInputRef.current!.accept = 'video/*'
-                    fileInputRef.current?.click()
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Video size={20} className="text-purple-600" />
-                </div>
-                <span className="font-medium">動画</span>
-            </button>
-            <button
-                onClick={() => {
-                    fileInputRef.current!.accept = '*/*'
-                    fileInputRef.current?.click()
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <File size={20} className="text-blue-600" />
-                </div>
-                <span className="font-medium">ファイル</span>
-            </button>
-            <button
-                onClick={() => {
-                    setShowWhiteboard(true)
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <PenTool size={20} className="text-orange-600" />
-                </div>
-                <span className="font-medium">ホワイトボード</span>
-            </button>
-            <button
-                onClick={() => {
-                    setShowGraphMaker(true)
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <TrendingUp size={20} className="text-indigo-600" />
-                </div>
-                <span className="font-medium">グラフ作成</span>
-            </button>
-            <button
-                onClick={() => {
-                    setShowTodoList(true)
-                    setShowAttachMenu(false)
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700"
-            >
-                <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
-                    <ListTodo size={20} className="text-teal-600" />
-                </div>
-                <span className="font-medium">タスクリスト</span>
-            </button>
-        </div>
-    )}
+                                // Get Signed URL
+                                const { token, path } = await invokeFunction('sign_upload', {
+                                    filename: filePath,
+                                    mime: 'image/png'
+                                }, activeRoomToken || undefined)
 
-    <button
-        onClick={() => setShowAttachMenu(!showAttachMenu)}
-        disabled={uploading}
-        className="flex-shrink-0 p-2 text-gray-500 hover:text-line-green transition-colors disabled:opacity-50"
-    >
-        {uploading ? (
-            <span className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-line-green rounded-full block" />
-        ) : (
-            <Plus size={24} className={showAttachMenu ? 'rotate-45 transition-transform' : 'transition-transform'} />
-        )}
-    </button>
-    <input
-        className="input-field"
-        placeholder="メッセージを入力..."
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && handleSend()}
-        onFocus={() => setShowAttachMenu(false)}
-    />
-    <button
-        onClick={handleSend}
-        disabled={!text.trim()}
-        className="send-btn"
-        style={{ backgroundColor: text.trim() ? currentTheme.primary : undefined }}
-    >
-        <Send size={18} />
-    </button>
-</div>
+                                // Upload
+                                const { error: uploadError } = await supabase.storage
+                                    .from('room-uploads')
+                                    .uploadToSignedUrl(path, token, blob)
 
-{/* Whiteboard */ }
-{
-    showWhiteboard && (
-        <Whiteboard
-            onClose={() => setShowWhiteboard(false)}
-            onSend={async (blob) => {
-                if (!id) return
-                setShowWhiteboard(false)
-                setUploading(true)
-                try {
-                    const fileName = `whiteboard_${Date.now()}.png`
-                    const filePath = `${id}/${fileName}`
+                                if (uploadError) throw uploadError
 
-                    // Get Signed URL
-                    const { token, path } = await invokeFunction('sign_upload', {
-                        filename: filePath,
-                        mime: 'image/png'
-                    }, activeRoomToken || undefined)
+                                const { data: urlData } = supabase.storage
+                                    .from('room-uploads')
+                                    .getPublicUrl(path)
 
-                    // Upload
-                    const { error: uploadError } = await supabase.storage
-                        .from('room-uploads')
-                        .uploadToSignedUrl(path, token, blob)
+                                const publicUrl = urlData.publicUrl
 
-                    if (uploadError) throw uploadError
+                                const newMessage = {
+                                    id: crypto.randomUUID(),
+                                    sender_name_snapshot: displayName,
+                                    sender_device_id: deviceId,
+                                    body: publicUrl,
+                                    kind: 'image',
+                                    created_at: new Date().toISOString()
+                                }
+                                setMessages(prev => [...prev, newMessage])
 
-                    const { data: urlData } = supabase.storage
-                        .from('room-uploads')
-                        .getPublicUrl(path)
+                                await supabase.from('room_messages').insert({
+                                    room_id: id,
+                                    sender_device_id: deviceId,
+                                    sender_name_snapshot: displayName || 'Anon',
+                                    kind: 'image',
+                                    body: publicUrl
+                                })
 
-                    const publicUrl = urlData.publicUrl
-
-                    const newMessage = {
-                        id: crypto.randomUUID(),
-                        sender_name_snapshot: displayName,
-                        sender_device_id: deviceId,
-                        body: publicUrl,
-                        kind: 'image',
-                        created_at: new Date().toISOString()
-                    }
-                    setMessages(prev => [...prev, newMessage])
-
-                    await supabase.from('room_messages').insert({
-                        room_id: id,
-                        sender_device_id: deviceId,
-                        sender_name_snapshot: displayName || 'Anon',
-                        kind: 'image',
-                        body: publicUrl
-                    })
-
-                    await supabase.from('room_attachments').insert({
-                        room_id: id,
-                        uploader_device_id: deviceId,
-                        kind: 'image',
-                        storage_path: path,
-                        mime: 'image/png',
-                        size_bytes: blob.size,
-                        filename: fileName
-                    })
-                } catch (err) {
-                    console.error('Whiteboard upload failed:', err)
-                    alert('ホワイトボードの送信に失敗しました')
-                } finally {
-                    setUploading(false)
-                }
-            }}
-        />
-    )
-}
+                                await supabase.from('room_attachments').insert({
+                                    room_id: id,
+                                    uploader_device_id: deviceId,
+                                    kind: 'image',
+                                    storage_path: path,
+                                    mime: 'image/png',
+                                    size_bytes: blob.size,
+                                    filename: fileName
+                                })
+                            } catch (err) {
+                                console.error('Whiteboard upload failed:', err)
+                                alert('ホワイトボードの送信に失敗しました')
+                            } finally {
+                                setUploading(false)
+                            }
+                        }}
+                    />
+                )
+            }
         </div >
     )
 }
