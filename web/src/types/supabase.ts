@@ -82,7 +82,7 @@ export interface Database {
                     room_id: string
                     sender_device_id: string | null
                     sender_name_snapshot: string
-                    kind: 'text' | 'image' | 'file'
+                    kind: 'text' | 'image' | 'video' | 'file'
                     body: string | null
                     attachment_id: string | null
                     created_at: string
@@ -92,7 +92,7 @@ export interface Database {
                     room_id: string
                     sender_device_id?: string | null
                     sender_name_snapshot: string
-                    kind: 'text' | 'image' | 'file'
+                    kind: 'text' | 'image' | 'video' | 'file'
                     body?: string | null
                     attachment_id?: string | null
                     created_at?: string
@@ -102,7 +102,7 @@ export interface Database {
                     room_id?: string
                     sender_device_id?: string | null
                     sender_name_snapshot?: string
-                    kind?: 'text' | 'image' | 'file'
+                    kind?: 'text' | 'image' | 'video' | 'file'
                     body?: string | null
                     attachment_id?: string | null
                     created_at?: string
@@ -121,7 +121,7 @@ export interface Database {
                     id: string
                     room_id: string
                     uploader_device_id: string | null
-                    kind: 'image' | 'file'
+                    kind: 'image' | 'video' | 'file'
                     storage_path: string
                     mime: string
                     size_bytes: number
@@ -132,7 +132,7 @@ export interface Database {
                     id?: string
                     room_id: string
                     uploader_device_id?: string | null
-                    kind: 'image' | 'file'
+                    kind: 'image' | 'video' | 'file'
                     storage_path: string
                     mime: string
                     size_bytes: number
@@ -143,7 +143,7 @@ export interface Database {
                     id?: string
                     room_id?: string
                     uploader_device_id?: string | null
-                    kind?: 'image' | 'file'
+                    kind?: 'image' | 'video' | 'file'
                     storage_path?: string
                     mime?: string
                     size_bytes?: number

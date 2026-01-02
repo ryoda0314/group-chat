@@ -184,7 +184,8 @@ export function RoomPage() {
             // Get Signed URL
             const filePath = `${id}/${Date.now()}_${file.name}`
             const isImage = file.type.startsWith('image/')
-            const kind = isImage ? 'image' : 'file'
+            const isVideo = file.type.startsWith('video/')
+            const kind = isImage ? 'image' : isVideo ? 'video' : 'file'
 
             const { token, path } = await invokeFunction('sign_upload', {
                 filename: filePath,
@@ -830,6 +831,13 @@ export function RoomPage() {
                                                     e.stopPropagation()
                                                     setPreviewImage(msg.body)
                                                 }}
+                                            />
+                                        ) : msg.kind === 'video' ? (
+                                            <video
+                                                src={msg.body}
+                                                controls
+                                                className="max-w-full rounded-lg max-h-[300px]"
+                                                poster={msg.thumbnail} // Optional: if we had one
                                             />
                                         ) : msg.kind === 'file' ? (
                                             <a
