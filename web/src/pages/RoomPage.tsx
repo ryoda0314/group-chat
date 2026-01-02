@@ -686,7 +686,7 @@ export function RoomPage() {
                                 try {
                                     const response = await fetch(previewImage);
                                     const blob = await response.blob();
-                                    const file = new File([blob], `image-${Date.now()}.png`, { type: blob.type });
+                                    const file = new (window.File as any)([blob], `image-${Date.now()}.png`, { type: blob.type });
 
                                     // Try Web Share API first (Best for Mobile "Save to Photos")
                                     if (navigator.share && navigator.canShare({ files: [file] })) {
