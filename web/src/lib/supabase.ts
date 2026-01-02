@@ -15,8 +15,8 @@ export function setAuthToken(token: string | null) {
     if (token) {
         // Create a new client with the custom token in global headers
         // This is a workaround since we're using custom JWTs not Supabase Auth
-        (supabase as any).rest.headers['Authorization'] = `Bearer ${token}`;
-        (supabase as any).realtime.accessToken = token;
+        (supabase as any).rest.headers['Authorization'] = `Bearer ${token}`
+        supabase.realtime.setAuth(token)
     }
 }
 

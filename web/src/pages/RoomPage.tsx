@@ -90,6 +90,10 @@ export function RoomPage() {
         }
         fetchRoom()
 
+        if (activeRoomToken) {
+            setAuthToken(activeRoomToken)
+        }
+
         const channel = supabase
             .channel(`room:${id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${id}` }, (payload: any) => {
@@ -111,7 +115,7 @@ export function RoomPage() {
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [id])
+    }, [id, activeRoomToken])
 
     // Effect to initialize join key from history or URL
     useEffect(() => {
