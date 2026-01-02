@@ -239,7 +239,20 @@ export function RoomPage() {
                 </div>
                 <div className="flex items-center gap-1">
                     <button
-                        onClick={() => setShowQR(true)}
+                        onClick={async () => {
+                            setShowQR(true)
+                            // Re-fetch room info to get real expiration
+                            if (id) {
+                                const { data: roomData } = await supabase
+                                    .from('rooms')
+                                    .select('expires_at')
+                                    .eq('id', id)
+                                    .single()
+                                if (roomData) {
+                                    setExpiresAt(roomData.expires_at)
+                                }
+                            }
+                        }}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
                     >
                         <QrCode size={20} />
@@ -286,7 +299,7 @@ export function RoomPage() {
                                 <div className="text-sm font-medium mb-3">{new Date(expiresAt).toLocaleString()}</div>
                                 <button
                                     onClick={async () => {
-                                        if (!confirm('有効期限を30日間延長し、QRコードを更新しますか？\n(古いQRコードは無効になります)')) return
+                                        if (!confirm('QRコードを更新しますか？\n(古いQRコードは無効になります)')) return
                                         try {
                                             await invokeFunction('rotate_qr', {
                                                 room_id: id,
@@ -300,7 +313,7 @@ export function RoomPage() {
                                     }}
                                     className="w-full text-sm bg-white border border-gray-300 py-2 rounded shadow-sm hover:bg-gray-50 font-medium text-gray-700"
                                 >
-                                    QRコード更新・期限延長
+                                    QRコード更新
                                 </button>
                             </div>
                         )}
