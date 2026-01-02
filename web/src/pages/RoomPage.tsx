@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, setAuthToken } from '../lib/supabase'
+import { supabase, setAuthToken, invokeFunction } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
 import { Send, Plus, ChevronLeft, QrCode, Users, X, Settings, LogOut, FileText, Image, Video, File, PenTool, HelpCircle, TrendingUp, ListTodo, Download } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -127,32 +127,45 @@ export function RoomPage() {
         const file = e.target.files?.[0]
         if (!file || !id) return
 
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('5MB以下のファイルを選択してください')
+            return
+        }
+
         setUploading(true)
         try {
-            // Upload to Supabase Storage
+            // Get Signed URL
             const filePath = `${id}/${Date.now()}_${file.name}`
+            const isImage = file.type.startsWith('image/')
+            const kind = isImage ? 'image' : 'file'
+
+            const { token, path } = await invokeFunction('sign_upload', {
+                filename: filePath,
+                mime: file.type
+            }, activeRoomToken || undefined)
+
+            // Upload via Signed URL
             const { error: uploadError } = await supabase.storage
                 .from('room-uploads')
-                .upload(filePath, file)
+                .uploadToSignedUrl(path, token, file)
 
             if (uploadError) throw uploadError
 
-            // Get public URL
+            // Get Public URL (or use signed URL if private? MVP public)
             const { data: urlData } = supabase.storage
                 .from('room-uploads')
-                .getPublicUrl(filePath)
+                .getPublicUrl(path)
 
-            // Determine if image or file
-            const isImage = file.type.startsWith('image/')
-            const kind = isImage ? 'image' : 'file'
+            const publicUrl = urlData.publicUrl
 
             // Add to messages
             const newMessage = {
                 id: crypto.randomUUID(),
                 sender_name_snapshot: displayName,
                 sender_device_id: deviceId,
-                body: urlData.publicUrl,
                 kind: kind,
+                body: publicUrl,
                 filename: file.name,
                 created_at: new Date().toISOString()
             }
@@ -164,7 +177,7 @@ export function RoomPage() {
                 sender_device_id: deviceId,
                 sender_name_snapshot: displayName || 'Anon',
                 kind: kind,
-                body: urlData.publicUrl
+                body: publicUrl
             })
 
             // Save attachment record
@@ -172,7 +185,7 @@ export function RoomPage() {
                 room_id: id,
                 uploader_device_id: deviceId,
                 kind: kind,
-                storage_path: filePath,
+                storage_path: path,
                 mime: file.type,
                 size_bytes: file.size,
                 filename: file.name
@@ -713,21 +726,30 @@ export function RoomPage() {
                             const fileName = `whiteboard_${Date.now()}.png`
                             const filePath = `${id}/${fileName}`
 
+                            // Get Signed URL
+                            const { token, path } = await invokeFunction('sign_upload', {
+                                filename: filePath,
+                                mime: 'image/png'
+                            }, activeRoomToken || undefined)
+
+                            // Upload
                             const { error: uploadError } = await supabase.storage
                                 .from('room-uploads')
-                                .upload(filePath, blob, { contentType: 'image/png' })
+                                .uploadToSignedUrl(path, token, blob)
 
                             if (uploadError) throw uploadError
 
                             const { data: urlData } = supabase.storage
                                 .from('room-uploads')
-                                .getPublicUrl(filePath)
+                                .getPublicUrl(path)
+
+                            const publicUrl = urlData.publicUrl
 
                             const newMessage = {
                                 id: crypto.randomUUID(),
                                 sender_name_snapshot: displayName,
                                 sender_device_id: deviceId,
-                                body: urlData.publicUrl,
+                                body: publicUrl,
                                 kind: 'image',
                                 created_at: new Date().toISOString()
                             }
@@ -738,14 +760,14 @@ export function RoomPage() {
                                 sender_device_id: deviceId,
                                 sender_name_snapshot: displayName || 'Anon',
                                 kind: 'image',
-                                body: urlData.publicUrl
+                                body: publicUrl
                             })
 
                             await supabase.from('room_attachments').insert({
                                 room_id: id,
                                 uploader_device_id: deviceId,
                                 kind: 'image',
-                                storage_path: filePath,
+                                storage_path: path,
                                 mime: 'image/png',
                                 size_bytes: blob.size,
                                 filename: fileName
