@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, QrCode, MessageCircle, Settings } from 'lucide-react'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
-import { useState } from 'react'
-import { invokeFunction, setAuthToken } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { invokeFunction, setAuthToken, supabase } from '../lib/supabase'
 
 export function HomePage() {
     const roomHistory = useAppStore(state => state.roomHistory)
@@ -14,7 +14,38 @@ export function HomePage() {
     const currentTheme = THEME_COLORS[themeColor]
     const navigate = useNavigate()
 
+    const activeRoomToken = useAppStore(state => state.activeRoomToken)
+
     const [isCreating, setIsCreating] = useState(false)
+    const [previews, setPreviews] = useState<Record<string, any>>({})
+
+    useEffect(() => {
+        if (roomHistory.length === 0) return
+
+        if (activeRoomToken) {
+            setAuthToken(activeRoomToken)
+        }
+
+        const fetchPreviews = async () => {
+            const roomIds = roomHistory.map(r => r.id)
+            if (roomIds.length === 0) return
+
+            const { data } = await supabase
+                .from('room_previews')
+                .select('*')
+                .in('room_id', roomIds)
+
+            if (data) {
+                const previewMap = data.reduce((acc: any, curr: any) => {
+                    acc[curr.room_id] = curr
+                    return acc
+                }, {})
+                setPreviews(previewMap)
+            }
+        }
+
+        fetchPreviews()
+    }, [roomHistory, activeRoomToken])
 
     const handleCreateRoom = async () => {
         const name = prompt("トークルーム名を入力（任意）")
@@ -135,8 +166,18 @@ export function HomePage() {
                                             {formatDate(room.joinedAt)}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-500 truncate mt-0.5">
-                                        タップしてトークを開く
+                                    <p className="text-sm text-gray-500 truncate mt-0.5 h-5">
+                                        {previews[room.id]?.latest_message ? (
+                                            (() => {
+                                                const msg = previews[room.id].latest_message
+                                                if (msg.kind === 'image') return <span className="text-gray-400">画像が送信されました</span>
+                                                if (msg.kind === 'video') return <span className="text-gray-400">動画が送信されました</span>
+                                                if (msg.kind === 'file') return <span className="text-gray-400">ファイルが送信されました</span>
+                                                return msg.body
+                                            })()
+                                        ) : (
+                                            <span className="text-gray-300 text-xs">メッセージはまだありません</span>
+                                        )}
                                     </p>
                                 </div>
                             </Link>

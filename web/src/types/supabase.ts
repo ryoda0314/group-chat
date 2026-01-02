@@ -195,7 +195,19 @@ export interface Database {
             }
         }
         Views: {
-            [_ in never]: never
+            room_previews: {
+                Row: {
+                    room_id: string
+                    room_name: string | null
+                    updated_at: string
+                    latest_message: {
+                        kind: 'text' | 'image' | 'video' | 'file'
+                        body: string | null
+                        created_at: string
+                        sender_name: string
+                    } | null
+                }
+            }
         }
         Functions: {
             [_ in never]: never
