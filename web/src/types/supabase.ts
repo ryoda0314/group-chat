@@ -193,7 +193,7 @@ export interface Database {
                     }
                 ]
             }
-        }
+        },
         Views: {
             room_previews: {
                 Row: {
