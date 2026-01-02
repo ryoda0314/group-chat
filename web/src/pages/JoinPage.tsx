@@ -68,8 +68,16 @@ export function JoinPage() {
                         setLastScanned(text)
                         try {
                             const url = new URL(text)
-                            const rid = url.searchParams.get('rid')
+                            let rid = url.searchParams.get('rid')
                             const key = url.searchParams.get('key')
+
+                            // Fallback: Check for /join/:rid format
+                            if (!rid && url.pathname.includes('/join/')) {
+                                const matches = url.pathname.match(/\/join\/([^\/]+)/)
+                                if (matches && matches[1]) {
+                                    rid = matches[1]
+                                }
+                            }
                             if (rid && key) {
                                 controls.stop()
                                 controlsRef.current = null
@@ -120,8 +128,16 @@ export function JoinPage() {
                 const text = result.getText()
                 try {
                     const url = new URL(text)
-                    const rid = url.searchParams.get('rid')
+                    let rid = url.searchParams.get('rid')
                     const key = url.searchParams.get('key')
+
+                    // Fallback: Check for /join/:rid format
+                    if (!rid && url.pathname.includes('/join/')) {
+                        const matches = url.pathname.match(/\/join\/([^\/]+)/)
+                        if (matches && matches[1]) {
+                            rid = matches[1]
+                        }
+                    }
                     if (rid && key) {
                         joinRoom(rid, key)
                     } else {
