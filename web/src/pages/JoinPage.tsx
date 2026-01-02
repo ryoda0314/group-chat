@@ -13,6 +13,7 @@ export function JoinPage() {
     const currentTheme = THEME_COLORS[themeColor]
 
     const [error, setError] = useState<string | null>(null)
+    const [lastScanned, setLastScanned] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [showManual, setShowManual] = useState(false)
     const [isLoadingImage, setIsLoadingImage] = useState(false)
@@ -64,6 +65,7 @@ export function JoinPage() {
                 const controls = await codeReader.current.decodeFromVideoDevice(undefined, videoRef.current, (result: any, _err: any, controls: any) => {
                     if (result) {
                         const text = result.getText()
+                        setLastScanned(text)
                         try {
                             const url = new URL(text)
                             const rid = url.searchParams.get('rid')
@@ -203,6 +205,14 @@ export function JoinPage() {
                     </div>
                 )}
             </div>
+
+            {/* Debug Info */}
+            {lastScanned && (
+                <div className="absolute top-24 left-4 right-4 bg-black/50 text-white p-2 rounded text-xs break-all z-20 font-mono">
+                    <div className="font-bold text-gray-300 mb-1">Last Scanned:</div>
+                    {lastScanned}
+                </div>
+            )}
 
             {/* Hidden file input for image selection */}
             <input
