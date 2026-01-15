@@ -58,17 +58,23 @@ export function RoomPage() {
             setAuthToken(activeRoomToken)
         }
 
-        const fetchRoom = async () => {
-            // Fetch room name
+        const fetchRoomInfo = async () => {
+            // Fetch room name & metadata
             const { data: roomData } = await supabase
                 .from('rooms')
                 .select('name, expires_at, owner_device_id')
                 .eq('id', id)
                 .single()
             if (roomData) {
-                setRoomName(roomData.name || 'グループチャット')
-                setExpiresAt(roomData.expires_at)
-                setIsOwner(roomData.owner_device_id === deviceId)
+                setRoomName(prev => {
+                    const newName = roomData.name || 'グループチャット'
+                    return prev !== newName ? newName : prev
+                })
+                setExpiresAt(prev => prev !== roomData.expires_at ? roomData.expires_at : prev)
+                setIsOwner(prev => {
+                    const isNowOwner = roomData.owner_device_id === deviceId
+                    return prev !== isNowOwner ? isNowOwner : prev
+                })
             }
 
             // Fetch participants
@@ -76,44 +82,54 @@ export function RoomPage() {
                 .from('room_participants')
                 .select('device_id, display_name, joined_at')
                 .eq('room_id', id)
-            if (parts) setParticipants(parts)
 
-            // Fetch existing messages
-            const { data: msgs } = await supabase
-                .from('room_messages')
-                .select('*')
-                .eq('room_id', id)
-                .order('created_at', { ascending: true })
-            if (msgs) setMessages(msgs)
-
-            setLoading(false)
-        }
-        fetchRoom()
-
-        // 3秒ごとにメッセージを更新
-        const fetchMessages = async () => {
-            const { data: msgs } = await supabase
-                .from('room_messages')
-                .select('*')
-                .eq('room_id', id)
-                .order('created_at', { ascending: true })
-            if (msgs) {
-                setMessages(prev => {
-                    // 新しいメッセージがある場合のみ更新
-                    if (msgs.length !== prev.length || (msgs.length > 0 && prev.length > 0 && msgs[msgs.length - 1]?.id !== prev[prev.length - 1]?.id)) {
-                        return msgs
+            if (parts) {
+                setParticipants(prev => {
+                    // Simple deep comparison to avoid unnecessary re-renders
+                    if (JSON.stringify(prev) !== JSON.stringify(parts)) {
+                        return parts
                     }
                     return prev
                 })
             }
         }
 
-        const interval = setInterval(fetchMessages, 3000)
+        const fetchMessages = async () => {
+            const { data: msgs } = await supabase
+                .from('room_messages')
+                .select('*')
+                .eq('room_id', id)
+                .order('created_at', { ascending: true })
+
+            if (msgs) {
+                setMessages(prev => {
+                    // Check for changes (new messages or deleted messages)
+                    const isLengthChanged = msgs.length !== prev.length
+                    const isLastMessageDifferent = msgs.length > 0 && prev.length > 0 && msgs[msgs.length - 1]?.id !== prev[prev.length - 1]?.id
+
+                    if (isLengthChanged || isLastMessageDifferent) {
+                        return msgs
+                    }
+                    return prev
+                })
+                setLoading(false)
+            }
+        }
+
+        // Initial fetch
+        fetchRoomInfo()
+        fetchMessages()
+
+        // Poll every 2 seconds
+        const interval = setInterval(() => {
+            fetchRoomInfo()
+            fetchMessages()
+        }, 2000)
 
         return () => {
             clearInterval(interval)
         }
-    }, [id, activeRoomToken])
+    }, [id, activeRoomToken, deviceId])
 
     // Effect to initialize join key from history or URL
     useEffect(() => {
