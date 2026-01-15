@@ -26,8 +26,9 @@ export function HomePage() {
             setAuthToken(activeRoomToken)
         }
 
+        const roomIds = roomHistory.map(r => r.id)
+
         const fetchPreviews = async () => {
-            const roomIds = roomHistory.map(r => r.id)
             if (roomIds.length === 0) return
 
             const { data } = await supabase
@@ -45,6 +46,24 @@ export function HomePage() {
         }
 
         fetchPreviews()
+
+        // リアルタイムで新しいメッセージを監視
+        const channel = supabase
+            .channel('home-messages-realtime')
+            .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'room_messages' },
+                (payload: any) => {
+                    // 履歴にあるルームのメッセージのみ更新
+                    if (roomIds.includes(payload.new.room_id)) {
+                        fetchPreviews()
+                    }
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
     }, [roomHistory, activeRoomToken])
 
     const handleCreateRoom = async () => {
