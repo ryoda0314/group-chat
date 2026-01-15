@@ -47,22 +47,11 @@ export function HomePage() {
 
         fetchPreviews()
 
-        // リアルタイムで新しいメッセージを監視
-        const channel = supabase
-            .channel('home-messages-realtime')
-            .on('postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'room_messages' },
-                (payload: any) => {
-                    // 履歴にあるルームのメッセージのみ更新
-                    if (roomIds.includes(payload.new.room_id)) {
-                        fetchPreviews()
-                    }
-                }
-            )
-            .subscribe()
+        // 5秒ごとにプレビューを更新
+        const interval = setInterval(fetchPreviews, 5000)
 
         return () => {
-            supabase.removeChannel(channel)
+            clearInterval(interval)
         }
     }, [roomHistory, activeRoomToken])
 
