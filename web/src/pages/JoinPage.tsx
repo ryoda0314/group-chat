@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { invokeFunction } from '../lib/supabase'
@@ -8,6 +8,7 @@ import { ChevronLeft, Camera, Keyboard, ImageIcon, X } from 'lucide-react'
 
 export function JoinPage() {
     const [searchParams] = useSearchParams()
+    const { rid: ridPath } = useParams<{ rid?: string }>()
     const navigate = useNavigate()
     const { deviceId, displayName, setDisplayName, addToHistory, setActiveRoomToken, themeColor } = useAppStore()
     const currentTheme = THEME_COLORS[themeColor]
@@ -25,7 +26,8 @@ export function JoinPage() {
     const qrReader = useRef(new BrowserQRCodeReader())
     const controlsRef = useRef<any>(null)
 
-    const ridParam = searchParams.get('rid')
+    // ridはパスパラメータ(/join/:rid)またはクエリパラメータ(?rid=xxx)のどちらかから取得
+    const ridParam = ridPath || searchParams.get('rid')
     const keyParam = searchParams.get('key')
 
     // QRコードから直接アクセスした場合の処理

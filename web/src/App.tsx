@@ -22,6 +22,7 @@ function App() {
         <Routes>
           <Route path="/name" element={<NamePage />} />
           <Route path="/join" element={<JoinPage />} />
+          <Route path="/join/:rid" element={<JoinPage />} />
 
           <Route path="/home" element={
             <ProtectedRoute>
