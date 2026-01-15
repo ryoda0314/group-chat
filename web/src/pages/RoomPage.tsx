@@ -90,30 +90,28 @@ export function RoomPage() {
         }
         fetchRoom()
 
-        if (activeRoomToken) {
-            setAuthToken(activeRoomToken)
+        // 3秒ごとにメッセージを更新
+        const fetchMessages = async () => {
+            const { data: msgs } = await supabase
+                .from('room_messages')
+                .select('*')
+                .eq('room_id', id)
+                .order('created_at', { ascending: true })
+            if (msgs) {
+                setMessages(prev => {
+                    // 新しいメッセージがある場合のみ更新
+                    if (msgs.length !== prev.length || (msgs.length > 0 && prev.length > 0 && msgs[msgs.length - 1]?.id !== prev[prev.length - 1]?.id)) {
+                        return msgs
+                    }
+                    return prev
+                })
+            }
         }
 
-        const channel = supabase
-            .channel(`room:${id}`)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${id}` }, (payload: any) => {
-                setMessages(prev => [...prev, payload.new])
-            })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'room_messages', filter: `room_id=eq.${id}` }, (payload: any) => {
-                setMessages(prev => prev.filter(m => m.id !== payload.old.id))
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'room_participants', filter: `room_id=eq.${id}` }, async () => {
-                // Refresh participants on change
-                const { data: parts } = await supabase
-                    .from('room_participants')
-                    .select('device_id, display_name, joined_at')
-                    .eq('room_id', id)
-                if (parts) setParticipants(parts)
-            })
-            .subscribe()
+        const interval = setInterval(fetchMessages, 3000)
 
         return () => {
-            supabase.removeChannel(channel)
+            clearInterval(interval)
         }
     }, [id, activeRoomToken])
 
