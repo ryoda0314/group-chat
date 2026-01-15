@@ -4,18 +4,21 @@ import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { invokeFunction } from '../lib/supabase'
 import { useAppStore, THEME_COLORS } from '../stores/useAppStore'
-import { ChevronLeft, Camera, Keyboard, ImageIcon } from 'lucide-react'
+import { ChevronLeft, Camera, Keyboard, ImageIcon, X } from 'lucide-react'
 
 export function JoinPage() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
-    const { deviceId, displayName, addToHistory, setActiveRoomToken, themeColor } = useAppStore()
+    const { deviceId, displayName, setDisplayName, addToHistory, setActiveRoomToken, themeColor } = useAppStore()
     const currentTheme = THEME_COLORS[themeColor]
 
     const [error, setError] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [showManual, setShowManual] = useState(false)
     const [isLoadingImage, setIsLoadingImage] = useState(false)
+    const [showNameModal, setShowNameModal] = useState(false)
+    const [pendingJoin, setPendingJoin] = useState<{ rid: string; key: string } | null>(null)
+    const [nameInput, setNameInput] = useState('')
     const videoRef = useRef<HTMLVideoElement>(null)
     const imageInputRef = useRef<HTMLInputElement>(null)
     const codeReader = useRef(new BrowserMultiFormatReader())
@@ -25,17 +28,49 @@ export function JoinPage() {
     const ridParam = searchParams.get('rid')
     const keyParam = searchParams.get('key')
 
+    // QRコードから直接アクセスした場合の処理
     useEffect(() => {
-        if (ridParam && keyParam && displayName) {
-            joinRoom(ridParam, keyParam)
+        if (ridParam && keyParam) {
+            if (displayName) {
+                joinRoom(ridParam, keyParam, displayName)
+            } else {
+                // 名前が未設定の場合、名前入力モーダルを表示
+                setPendingJoin({ rid: ridParam, key: keyParam })
+                setShowNameModal(true)
+            }
         }
-    }, [ridParam, keyParam, displayName])
+    }, [ridParam, keyParam])
 
-    const joinRoom = async (rid: string, key: string) => {
+    // 名前入力後に参加処理を実行
+    useEffect(() => {
+        if (displayName && pendingJoin && !showNameModal) {
+            joinRoom(pendingJoin.rid, pendingJoin.key, displayName)
+            setPendingJoin(null)
+        }
+    }, [displayName, pendingJoin, showNameModal])
+
+    const handleNameSubmit = () => {
+        if (nameInput.trim()) {
+            setDisplayName(nameInput.trim())
+            setShowNameModal(false)
+        }
+    }
+
+    // 名前がある場合はjoinRoom、ない場合は名前入力モーダルを表示
+    const handleJoin = (rid: string, key: string) => {
+        if (displayName) {
+            joinRoom(rid, key, displayName)
+        } else {
+            setPendingJoin({ rid, key })
+            setShowNameModal(true)
+        }
+    }
+
+    const joinRoom = async (rid: string, key: string, name: string) => {
         try {
             const { room, token } = await invokeFunction('join_room', {
                 device_id: deviceId,
-                display_name: displayName,
+                display_name: name,
                 rid,
                 key
             })
@@ -81,7 +116,7 @@ export function JoinPage() {
                                 controls.stop()
                                 controlsRef.current = null
                                 stream.getTracks().forEach(t => t.stop())
-                                joinRoom(rid, key)
+                                handleJoin(rid, key)
                             }
                         } catch {
                             // Ignore
@@ -139,7 +174,7 @@ export function JoinPage() {
                     }
 
                     if (rid && key) {
-                        joinRoom(rid, key)
+                        handleJoin(rid, key)
                     } else {
                         setError('有効なルーム参加用QRコードではありません')
                     }
@@ -165,6 +200,45 @@ export function JoinPage() {
 
     return (
         <div className="h-screen max-h-[100dvh] flex flex-col bg-gray-900">
+            {/* Name Input Modal */}
+            {showNameModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-bold">名前を入力</h2>
+                            <button
+                                onClick={() => {
+                                    setShowNameModal(false)
+                                    setPendingJoin(null)
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+                        <p className="text-gray-500 text-sm mb-4">
+                            グループに参加するには、表示名を入力してください。
+                        </p>
+                        <input
+                            type="text"
+                            value={nameInput}
+                            onChange={(e) => setNameInput(e.target.value)}
+                            placeholder="あなたの名前"
+                            className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-line-green mb-4"
+                            autoFocus
+                        />
+                        <button
+                            onClick={handleNameSubmit}
+                            disabled={!nameInput.trim()}
+                            className="w-full text-white p-3 rounded-xl font-bold disabled:opacity-50 transition-opacity"
+                            style={{ backgroundColor: currentTheme.primary }}
+                        >
+                            参加する
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header
                 className="text-white px-4 py-3 pt-[calc(12px+env(safe-area-inset-top))] flex items-center gap-3 shadow-sm z-10"
@@ -272,7 +346,7 @@ export function JoinPage() {
                         onSubmit={(e) => {
                             e.preventDefault()
                             const form = e.target as HTMLFormElement
-                            joinRoom(form.rid.value, form.key.value)
+                            handleJoin(form.rid.value, form.key.value)
                         }}
                         className="space-y-3 animate-enter"
                     >
